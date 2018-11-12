@@ -26,6 +26,7 @@ D2dInforDataSingle::D2dInforDataSingle(QObject *parent) : QObject(parent)
     UlRateStr = "0";
     isCalibrateFlag = false;
     whichCalibrateFromFlag = false;
+    clPWRctl = 2;
 
     localServer = new QLocalServer(this);
     connect(localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
@@ -183,6 +184,16 @@ void D2dInforDataSingle::dataReceived()
            else if(index == 6)
            {
                emit srvStateSingle(index);
+           }
+       }
+       else if (vTemp.contains(D2D_TX_POWER_CTRL_STATE_TAG))
+       {
+           QStringList tempList = vTemp.split(' ');
+           QString temp = tempList.at(1);
+           int index = temp.toInt();
+           if((index == 0) || (index == 1))
+           {
+               emit clPWRctlSingle(index);
            }
        }
        else
@@ -634,6 +645,11 @@ QString D2dInforDataSingle::getSendCmdStr()
     return sendCmdStr;
 }
 
+void D2dInforDataSingle::setCliclPWRctl(int value)
+{
+    clPWRctl = value;
+}
+
 QString D2dInforDataSingle::getDataColorStr(int value)
 {
     if(value < -5)
@@ -671,6 +687,8 @@ void D2dInforDataSingle::sendCalibrationCmd(int index)
 
     // 8 /*aoto calibrate send cmd*/                    QGC_FREQ_AUTO_CALIBRATE_TAG
 
+    //9                                                 #define QGC_TX_POWER_CTRL_TAG
+
     if(index == 0){
         sendCalibrationCmdStr = QGC_QUERY_HOPPING_STATE_TAG;
     }
@@ -706,10 +724,13 @@ void D2dInforDataSingle::sendCalibrationCmd(int index)
         sendCalibrationCmdStr = QGC_FREQ_AUTO_CALIBRATE_TAG;
         qCritical() << "D2dInforDataSingle sendCalibrationCmd QGC_FREQ_AUTO_CALIBRATE_TAG send.";
     }
+    else if(index == 9){
+        sendCalibrationCmdStr = QGC_TX_POWER_CTRL_TAG;
+        sendCalibrationCmdStr = sendCalibrationCmdStr + ":" + QString::number(clPWRctl);
+    }
     else{
         return;
     }
-
 
     sendCmdStr = sendCalibrationCmdStr;
 

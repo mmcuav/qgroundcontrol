@@ -150,7 +150,7 @@ QVariantList &QGCCorePlugin::settingsPages()
 
         _p->pCalibration = new QmlComponentInfo(tr("Calibration "),
                                        QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/FreqCalibration.qml"));
-        _p->settingsList.append(QVariant::fromValue((QmlComponentInfo*)_p->pCalibration));
+        //_p->settingsList.append(QVariant::fromValue((QmlComponentInfo*)_p->pCalibration));
 
         _p->pD2dInfo = new QmlComponentInfo(tr("D2d Info "),
                                        QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/D2dInfo.qml"));

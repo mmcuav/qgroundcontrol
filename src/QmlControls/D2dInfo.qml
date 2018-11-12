@@ -42,6 +42,8 @@ QGCView {
 
     property real __oneSideBwLineWide: 50
 
+    property string qgcCmd
+
     QGCPalette { id: qgcPal; colorGroupEnabled: panel.enabled }
 
     QGCViewPanel {
@@ -156,12 +158,32 @@ QGCView {
                     }
                 }
              }
+            QGCCheckBox {
+                id:         pwRctrlCheckBox
+                anchors.left:          parent.left
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
+                anchors.bottom:         parent.bottom
+                text:       qsTr("PWRCTRL")
+                checked:       true
+                onClicked:{
+                    if(pwRctrlCheckBox.checked)
+                    {
+                        pD2dInforData.setCliclPWRctl(1);
+                    }
+                    else
+                    {
+                        pD2dInforData.setCliclPWRctl(0);
+                    }
+                    //clPWRctl
+                    pD2dInforData.sendCalibrationCmd(9);
+                }
+            }
 
             QGCComboBox {
                 id:             urulCombo
-                anchors.left:          parent.left
+                anchors.left:          pwRctrlCheckBox.right
                 anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
-                width:                 manualBtn.width*1.5
+                width:                 manualBtn.width*1.2
                 anchors.bottom:         parent.bottom
                 model:          [qsTr("UL_1.4M"), qsTr("UL_10M"), qsTr("UL_20M")]
 
@@ -175,7 +197,7 @@ QGCView {
                 id:             urDlCombo
                 anchors.left:          urulCombo.right
                 anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
-                width:                 manualBtn.width*1.5
+                width:                 manualBtn.width*1.2
                 anchors.bottom:         parent.bottom
                 model:          [qsTr("DL_10M"), qsTr("DL_20M")]
 
@@ -191,7 +213,7 @@ QGCView {
             QGCButton {
                 id:                    calibrateButton
                 anchors.left:          urDlCombo.right
-                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*2
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
                 width:                 manualBtn.width*1.5
                 anchors.bottom:         parent.bottom
                 text:            qsTr("Calibrate")
@@ -406,6 +428,11 @@ QGCView {
                     }
                     else
                     {
+                        qgcCmd = pD2dInforData.getSendCmdStr();
+                        if(qgcCmd.indexOf("QGCTXPWRCTRL:2") != -1)
+                        {
+                            return;
+                        }
                         svrMessageDialog.text = qsTr(" succeed.");
                         svrMessageDialog.open();
                     }
@@ -418,7 +445,9 @@ QGCView {
                 title: "WARNING"
                 text: "Please long press the airplane calibrate button for 3 seconds within 30 seconds,and wait for a moment .\n"
                 standardButtons:    StandardButton.NoButton
-                Component.onCompleted: visible = false
+                modality:           Qt.ApplicationModal
+
+                Component.onCompleted: visible = true
             }
 
             Connections{
@@ -450,6 +479,11 @@ QGCView {
                     }
                     else
                     {
+                        qgcCmd = pD2dInforData.getSendCmdStr();
+                        if(qgcCmd.indexOf("QGCTXPWRCTRL") != -1)
+                        {
+                            pwRctrlCheckBox.checked = !pwRctrlCheckBox.checked;
+                        }
                         svrMessageDialog.text = qsTr(" failed.");
                         svrMessageDialog.open();
                     }
@@ -620,6 +654,22 @@ QGCView {
                 }
             }
 
+            Connections{
+                target: pD2dInforData
+                onClPWRctlSingle:{
+                    if(index == 0)
+                    {
+                        pD2dInforData.setCliclPWRctl(0);
+                        pwRctrlCheckBox.checked = false;
+                    }
+                    else if(index == 1)
+                    {
+                        pD2dInforData.setCliclPWRctl(1);
+                        pwRctrlCheckBox.checked = true;
+                    }
+                }
+            }
+
             MessageDialog {
                 id: svrMessageDialog
                 icon: StandardIcon.Warning
@@ -636,6 +686,10 @@ QGCView {
                pD2dInforData.sendCalibrationCmd(0);
                pD2dInforData.sendCalibrationCmd(6);
                pD2dInforData.sendCalibrationCmd(7);
+
+              //clPWRctl
+              pD2dInforData.setCliclPWRctl(2);
+              pD2dInforData.sendCalibrationCmd(9);
             }
         }
     } // QGCViewPanel

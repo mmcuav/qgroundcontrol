@@ -32,6 +32,8 @@
 #define D2D_UPLINK_BANDWIDTH_CONFIG_TAG       "UL_BW_CFG"
 #define D2D_DOWNLINK_BANDWIDTH_CONFIG_TAG     "DL_BW_CFG"
 
+#define D2D_TX_POWER_CTRL_STATE_TAG           "TX_PWR_CTRL"
+
 
 /* qgc cmd message tag definition */
 #define QGC_FREQ_NEGOTIATION_TAG              "QGCFREQNEG"
@@ -48,13 +50,16 @@
 
 #define QGC_FREQ_AUTO_CALIBRATE_TAG           "QGCAUTOCLBR"
 
+#define QGC_TX_POWER_CTRL_TAG                 "QGCTXPWRCTRL"
+
 
 //socket connect server
 #define SERVER_NAME_D2D_INFO                  "/tmp/qgccmd"
 
-#define MAX_DATA_NUMBER                       (115*20)
-#define MAX_CURRENT_NUMBER                     20
-#define EVERYTIME_DATA_NUMBER                  115
+#define MAX_DATA_NUMBER                       (116*3)
+#define MAX_CURRENT_NUMBER                     3
+
+#define EVERYTIME_DATA_NUMBER                  116
 #define MAX_COLOR_NUMBER                       5
 #define MAX_DATA_DISTANCE                      25
 
@@ -111,6 +116,9 @@ private:
     //calibrate
     float getCalibrateDataPercent(int yvalue);
 
+    //QGCTXPWRCTRL
+    int clPWRctl;
+
 public slots:
     void newLocalConnection();
     void dataReceived();
@@ -141,6 +149,9 @@ signals:
     //maintoolbar calibrate
     void maintoolbarCalibrateFalied();
     void maintoolbarCalibrateSucceed();
+
+    //QGCTXPWRCTRL
+    void clPWRctlSingle(int index);
 
 public:
     static void Destroy();
@@ -188,6 +199,10 @@ public:
 
     //cmd str
     Q_INVOKABLE QString getSendCmdStr();
+
+    //QGCTXPWRCTRL
+    Q_INVOKABLE  void setCliclPWRctl(int value);
+
 
 
 
