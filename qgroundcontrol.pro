@@ -596,6 +596,7 @@ HEADERS += \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
     src/UTM.h \
+    src/SystemMessageHandler.h \
 
 AndroidBuild {
 HEADERS += \
@@ -788,6 +789,7 @@ SOURCES += \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
     src/UTM.cpp \
+    src/SystemMessageHandler.cc \
 
 DebugBuild {
 SOURCES += \

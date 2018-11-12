@@ -38,6 +38,7 @@
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
 #include "SettingsManager.h"
+#include "SystemMessageHandler.h"
 
 Q_DECLARE_METATYPE(mavlink_message_t)
 
@@ -69,12 +70,14 @@ MAVLinkProtocol::MAVLinkProtocol(QGCApplication* app, QGCToolbox* toolbox)
     memset(&totalErrorCounter, 0, sizeof(totalErrorCounter));
     memset(&currReceiveCounter, 0, sizeof(currReceiveCounter));
     memset(&currLossCounter, 0, sizeof(currLossCounter));
+    _systemMessageHandler = new SystemMessageHandler(this);
 }
 
 MAVLinkProtocol::~MAVLinkProtocol()
 {
     storeSettings();
     _closeLogFile();
+    delete _systemMessageHandler;
 }
 
 void MAVLinkProtocol::setVersion(unsigned version)
