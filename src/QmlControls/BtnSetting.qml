@@ -26,11 +26,13 @@ QGCView {
     id:         freqCalibration
     viewPanel:  panel
     property var _qgcView: qgcView
-    property real __xMaxNum: 20
-    property real __yminNum: 47000
-    property real __ymaxNum: 47820
-    property real __xcurrent: 0
-    property real __timerSec: 5
+    property real __gap1: 15
+
+
+    property real __chNumber: 0
+    property real __comboxIndex: 0
+
+
     property bool __isCalibrate:false
     property bool __isAuto:false
 
@@ -41,288 +43,813 @@ QGCView {
         id:             panel
         anchors.fill:   parent
         Rectangle {
-            id:              logwindow
+            id:              centreWindow
             anchors.fill:    parent
             anchors.margins: ScreenTools.defaultFontPixelWidth
             color:           qgcPal.window
 
-            Text{
-                id:sliderText
-                color: "blue";
-                text: "current - 0.1";
-            }
-
-            Slider
-               {
-                   x: (parent.width - width)/2
-                   y: (parent.height - height)/2
-                   width: 600
-                   height: 20
-                   stepSize: 1
-                   minimumValue: 1100
-                   maximumValue: 1900
-                   onValueChanged:
-                   {
-                       //console.log(value)
-                       sliderText.text = "current : " + value;
-                   }
-                   style: SliderStyle
-                   {
-                       groove: m_Slider
-                       handle: m_Handle
-                   }
-               }
-               Component
-               {
-                   id: m_Slider
-                   Rectangle
-                   {
-                       implicitHeight:8
-                       color:"gray"
-                       radius:8
-                   }
-               }
-               Component
-               {
-                   id: m_Handle
-                   Rectangle{
-                       anchors.centerIn: parent;
-                       color:control.pressed ? "white":"lightgray";
-                       border.color: "gray";
-                       border.width: 2;
-                       width: 34;
-                       height: 34;
-                       radius: 12;
-
-                   }
-               }
-
-
-            QGCComboBox {
-                id:             urulCombo
-                anchors.left:          parent.left
-                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
-                width:                 manualBtn.width*1.5
-                anchors.bottom:         parent.bottom
-                model:          [qsTr("UL_1.4M"), qsTr("UL_10M"), qsTr("UL_20M")]
-
-                onActivated: {
-                    if (index != -1) {
-                    }
+            function whichStatusIn() {
+                if ((__chNumber < 5)||(__chNumber > 10))
+                {
+                    return;
                 }
-            }
-            QGCComboBox {
-                id:             urDlCombo
-                anchors.left:          urulCombo.right
-                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
-                width:                 manualBtn.width*1.5
-                anchors.bottom:         parent.bottom
-                model:          [qsTr("DL_10M"), qsTr("DL_20M")]
-
-                onActivated: {
-                    if (index != -1) {
-                    }
-                }
-            }
-
-            QGCButton {
-                id:                    calibrateButton
-                anchors.left:          urDlCombo.right
-                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*2
-                width:                 manualBtn.width*1.5
-                anchors.bottom:         parent.bottom
-                text:            qsTr("Calibrate")
-                onClicked:{
-                    __isCalibrate = true;
-                    urulCombo.visible = !__isCalibrate;
-                    urDlCombo.visible = !__isCalibrate;
-
-                    manualSetValue.visible = !__isCalibrate;
-                    labelRec.visible = !__isCalibrate;
-
-                    okButton.visible = !__isCalibrate;
-                    manualBtn.visible = !__isCalibrate;
-                    autoBtn.visible = !__isCalibrate;
-
-                    messageDialog.open();
-                }
-            }
-
-
-            Rectangle{
-                id:                    showlabel
-                anchors.top:           manualBtn.top
-                anchors.right:         snrlabel.left
-                anchors.rightMargin:   ScreenTools.defaultFontPixelWidth*0.5
-                anchors.bottom:        parent.bottom
-                width:                 manualBtn.width
-
-                color:                 qgcPal.window
-                border.width:          1
-                //visible:               false
-                Text{
-                    id:                     showCurrelValueLabel
-                    anchors.fill:           parent
-                    text:                   qsTr("0")
-                    //visible:                false
-                    verticalAlignment:      Text.AlignVCenter
-                    horizontalAlignment:    Text.AlignHCenter
-                    font.pointSize:         okButton.pointSize
-                }
-            }
-
-            //snr
-
-            Rectangle{
-                id:                    snrlabel
-                anchors.top:           manualBtn.top
-                anchors.right:         labelRec.left
-                anchors.rightMargin:   ScreenTools.defaultFontPixelWidth*0.5
-                anchors.bottom:        parent.bottom
-                width:                 manualBtn.width
-
-                color:                 qgcPal.window
-                border.width:          1
-                //visible:               false
-                Text{
-                    id:                     snrValueLabel
-                    anchors.fill:           parent
-                    text:                   qsTr("snr")
-                    //visible:                false
-                    verticalAlignment:      Text.AlignVCenter
-                    horizontalAlignment:    Text.AlignHCenter
-                    font.pointSize:         okButton.pointSize
-                }
-            }
-
-
-            Rectangle{
-                id:                    labelRec
-                anchors.top:           manualBtn.top
-                anchors.right:         okButton.left
-                anchors.rightMargin:   ScreenTools.defaultFontPixelWidth*0.5
-                anchors.bottom:        parent.bottom
-                width:                 manualBtn.width
-                color:                 qgcPal.window
-                border.width:          1
-                //visible:               false
-                QGCTextField{
-                    id:     manualSetValue
-                    anchors.fill:           parent
-                    width:                 manualBtn.width
-                    text:   "0"
-                    focus: true
-                    inputMethodHints:       Qt.ImhFormattedNumbersOnly
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            QGCButton {
-                id:                     okButton
-                anchors.right:          manualBtn.left
-                anchors.rightMargin:    ScreenTools.defaultFontPixelWidth*0.5
-                anchors.bottom:         parent.bottom
-                text:                   qsTr("OK")
-                onClicked: {
-                    manualBtn.checked = true;
-                    autoBtn.checked = false;
-                }
-            }
-
-            QGCButton {
-                id:                     manualBtn
-                anchors.right:          autoBtn.left
-                anchors.rightMargin:    ScreenTools.defaultFontPixelWidth*0.5
-                anchors.bottom:         parent.bottom
-                text:                   qsTr("Manual")
-                checkable:              true
-                checked:                false
-
-                onClicked:{
-                    manualSetValue.visible = true;
-                    labelRec.visible = true;
-                    okButton.checkable = true;
-                    okButton.checked = false;
-
-                    manualBtn.checked = true;
-                    autoBtn.checked = false;
-
-                    __isAuto = false;
-                }
-            }
-
-            QGCButton {
-                id:                     autoBtn
-                anchors.right:          parent.right
-                anchors.rightMargin:     ScreenTools.defaultFontPixelWidth*0.5
-                anchors.bottom:         parent.bottom
-                text:                   qsTr("Auto")
-                checkable:              true
-                checked:                true
-                onClicked:{
-                    manualSetValue.visible = false;
-                    labelRec.visible = false;
-                    okButton.checkable = false;
-                    okButton.checked = false;
-
-                    manualBtn.checked = false;
-                    autoBtn.checked = true;
-
-                    __isAuto = true;
-                }
-            }
-
-            MessageDialog {
-                id: messageDialog
-                icon: StandardIcon.Warning
-                title: "WARNING"
-                text: "Please long press the airplane calibrate button for 3 seconds within 30 seconds,and wait for a moment .\n"
-                standardButtons:    StandardButton.NoButton
-                Component.onCompleted: visible = false
-            }
-
-            MessageDialog {
-                id: resultDialog
-                icon: StandardIcon.Warning
-                title: "WARNING"
-                text: "calibrate succeed."
-                standardButtons:    StandardButton.Ok
-                onAccepted: {
-                    close();
-                }
-                Component.onCompleted: visible = false
-            }
-
-            Timer {
-                id: timer
-                interval: 1000
-                repeat: true
-                triggeredOnStart: true
-                //running: false
-                onTriggered: {
-                    __timerSec--;
-                    if(__timerSec < 0)
+                else
+                {
+                    if(__chNumber == 10)
                     {
-                        timer.stop();
-                        resultDialog.close();
+                        //show
+                        mainlyout.visible = false;
+                        videoLyout.visible = true;
+                    }
+                    else if(__comboxIndex == 1)
+                    {
+                        //show
+                        mainlyout.visible = false;
+                        oneChannelLyout.visible = true;
+
+                    }
+                    else
+                    {
+                        if(__comboxIndex == 3)
+                        {
+                            mulRow4.visible = false;
+                        }
+                        else if(__comboxIndex == 2)
+                        {
+                            mulRow4.visible = false;
+                            mulRow3.visible = false;
+                        }
+                        mainlyout.visible = false;
+                        mulChannelLyout.visible = true;
                     }
                 }
             }
+            function saveChSetting() {
+                if(__chNumber == 5)
+                {
+                    if(ch5Combo.currentIndex == 0)
+                    {
+                        ch5Label.text = oneChannelCombo1.currentText;
+                    }
+                    else if(ch5Combo.currentIndex == 1)
+                    {
+                        ch5Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText;
+                    }
+                    else if(ch5Combo.currentIndex == 2)
+                    {
+                        ch5Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText;
+                    }
+                    else if(ch5Combo.currentIndex == 3)
+                    {
+                        ch5Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText  + "," + mulRow4Combox.currentText;
+                    }
+                }
+                else if(__chNumber == 6)
+                {
+                    if(ch6Combo.currentIndex == 0)
+                    {
+                        ch6Label.text = oneChannelCombo1.currentText;
+                    }
+                    else if(ch6Combo.currentIndex == 1)
+                    {
+                        ch6Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText;
+                    }
+                    else if(ch6Combo.currentIndex == 2)
+                    {
+                        ch6Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText;
+                    }
+                    else if(ch6Combo.currentIndex == 3)
+                    {
+                        ch6Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText  + "," + mulRow4Combox.currentText;
+                    }
+                }
+                else if(__chNumber == 7)
+                {
+                    if(ch7Combo.currentIndex == 0)
+                    {
+                        ch7Label.text = oneChannelCombo1.currentText;
+                    }
+                    else if(ch7Combo.currentIndex == 1)
+                    {
+                        ch7Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText;
+                    }
+                    else if(ch7Combo.currentIndex == 2)
+                    {
+                        ch7Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText;
+                    }
+                    else if(ch7Combo.currentIndex == 3)
+                    {
+                        ch7Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText  + "," + mulRow4Combox.currentText;
+                    }
+                }
+                else if(__chNumber == 8)
+                {
+                    if(ch8Combo.currentIndex == 0)
+                    {
+                        ch8Label.text = oneChannelCombo1.currentText;
+                    }
+                    else if(ch8Combo.currentIndex == 1)
+                    {
+                        ch8Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText;
+                    }
+                    else if(ch8Combo.currentIndex == 2)
+                    {
+                        ch8Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText;
+                    }
+                    else if(ch8Combo.currentIndex == 3)
+                    {
+                        ch8Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText  + "," + mulRow4Combox.currentText;
+                    }
+                }
+                else if(__chNumber == 9)
+                {
+                    if(ch9Combo.currentIndex == 0)
+                    {
+                        ch9Label.text = oneChannelCombo1.currentText;
+                    }
+                    else if(ch9Combo.currentIndex == 1)
+                    {
+                        ch9Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText;
+                    }
+                    else if(ch9Combo.currentIndex == 2)
+                    {
+                        ch9Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText;
+                    }
+                    else if(ch9Combo.currentIndex == 3)
+                    {
+                        ch9Label.text = mulRow1Combox.currentText + "," + mulRow2Combox.currentText + "," + mulRow3Combox.currentText  + "," + mulRow4Combox.currentText;
+                    }
+                }
+                else if(__chNumber == 10)
+                {
+                    videoLabel.text = videoCombox.currentText;
+                }
+            }
 
+
+
+            Row{
+                id:             mainlyout
+                anchors.fill:   parent
+                anchors.leftMargin: 200
+                Column{
+                    anchors.fill:   parent
+                    spacing: 22
+                    Row{
+                        spacing: 160
+                        QGCLabel {
+                            text:                   qsTr("CH")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCLabel {
+                            text:                   qsTr("Button options")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+                    Row{
+                        spacing: 150
+                        QGCLabel {
+                            anchors.top:         parent.top
+                            anchors.topMargin:   __gap1
+                            text:                   qsTr("CH5")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCComboBox {
+                            id:             ch5Combo
+                            model:          [qsTr("one button"), qsTr("two buttons"), qsTr("three buttons"), qsTr("four buttons")]
+                            width:      ScreenTools.defaultFontPixelWidth*12
+                            onActivated: {
+                                if (index != -1) {
+                                }
+                            }
+                        }
+
+                        QGCButton {
+                            id:                    ch5Button
+                            text:            qsTr("Settings")
+                            onClicked:{
+                                __chNumber = 5;
+                                __comboxIndex = ch5Combo.currentIndex + 1;
+                                centreWindow.whichStatusIn();
+                            }
+                        }
+                        QGCLabel {
+                            id:                     ch5Label
+                            text:                   qsTr("undefined")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+                    Row{
+                        spacing: 150
+                        QGCLabel {
+                            text:                   qsTr("CH6")
+                            anchors.top:         parent.top
+                            anchors.topMargin:   __gap1
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCComboBox {
+                            id:                    ch6Combo
+                            model:          [qsTr("one button"), qsTr("two buttons"), qsTr("three buttons"), qsTr("four buttons")]
+                            width:      ScreenTools.defaultFontPixelWidth*12
+                            onActivated: {
+                                if (index != -1) {
+                                }
+                            }
+                        }
+
+                        QGCButton {
+                            id:                    ch6Button
+                            text:            qsTr("Settings")
+                            onClicked:{
+                                __chNumber = 6;
+                                __comboxIndex = ch6Combo.currentIndex + 1;
+                                centreWindow.whichStatusIn();
+                            }
+                        }
+                        QGCLabel {
+                            id:                     ch6Label
+                            text:                   qsTr("undefined")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+
+                    Row{
+                        spacing: 150
+                        QGCLabel {
+                            text:                   qsTr("CH7")
+                            anchors.top:         parent.top
+                            anchors.topMargin:   __gap1
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCComboBox {
+                            id:         ch7Combo
+                            model:      [qsTr("one button"), qsTr("two buttons"), qsTr("three buttons"), qsTr("four buttons")]
+                            width:      ScreenTools.defaultFontPixelWidth*12
+                            onActivated: {
+                                if (index != -1) {
+                                }
+                            }
+                        }
+
+                        QGCButton {
+                            id:                    ch7Button
+                            text:            qsTr("Settings")
+                            onClicked:{
+                                __chNumber = 7;
+                                __comboxIndex = ch7Combo.currentIndex + 1;
+                                centreWindow.whichStatusIn();
+                            }
+                        }
+                        QGCLabel {
+                            id:                     ch7Label
+                            text:                   qsTr("undefined")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+
+                    Row{
+                        spacing: 150
+                        QGCLabel {
+                            text:                   qsTr("CH8")
+                            anchors.top:         parent.top
+                            anchors.topMargin:   __gap1
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCComboBox {
+                            id:                    ch8Combo
+                            model:          [qsTr("one button"), qsTr("two buttons"), qsTr("three buttons"), qsTr("four buttons")]
+                            width:      ScreenTools.defaultFontPixelWidth*12
+                            onActivated: {
+                                if (index != -1) {
+                                }
+                            }
+                        }
+
+                        QGCButton {
+                            id:                    ch8Button
+                            text:            qsTr("Settings")
+                            onClicked:{
+                                __chNumber = 8;
+                                __comboxIndex = ch8Combo.currentIndex + 1;
+                                centreWindow.whichStatusIn();
+                            }
+                        }
+                        QGCLabel {
+                            id:                     ch8Label
+                            text:                   qsTr("undefined")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+
+                    Row{
+                        spacing: 150
+                        QGCLabel {
+                            text:                   qsTr("CH9")
+                            anchors.top:         parent.top
+                            anchors.topMargin:   __gap1
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCComboBox {
+                            id:                    ch9Combo
+                            model:          [qsTr("one button"), qsTr("two buttons"), qsTr("three buttons"), qsTr("four buttons")]
+                            width:      ScreenTools.defaultFontPixelWidth*12
+                            onActivated: {
+                                if (index != -1) {
+                                }
+                            }
+                        }
+
+                        QGCButton {
+                            id:                    ch9Button
+                            text:            qsTr("Settings")
+                            onClicked:{
+                                __chNumber = 9;
+                                __comboxIndex = ch9Combo.currentIndex + 1;
+                                centreWindow.whichStatusIn();
+                            }
+                        }
+                        QGCLabel {
+                            id:                     ch9Label
+                            text:                   qsTr("undefined")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+                    Row{
+                        spacing: 150
+                        QGCLabel {
+                            text:                   qsTr("Video switch")
+                            anchors.top:         parent.top
+                            anchors.topMargin:   __gap1
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                        QGCLabel {
+                            text:                qsTr("     ")
+                            width:      ScreenTools.defaultFontPixelWidth*6
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+
+                        QGCButton {
+                            id:                     videoButton
+                            text:                   qsTr("Settings")
+                            onClicked:{
+                                __chNumber = 10;
+                                centreWindow.whichStatusIn();
+                            }
+                        }
+                        QGCLabel {
+                            id:                     videoLabel
+                            text:                   qsTr("undefined")
+                            wrapMode:               Text.WordWrap
+                            horizontalAlignment:    Text.AlignHCenter
+                        }
+                    }
+                }
+            }
+            Column{
+                id:                   oneChannelLyout
+                anchors.fill:         parent
+                anchors.leftMargin: 300
+                anchors.topMargin:  50
+                spacing: 80
+                Row{
+                    id:oneChannelRow1
+                    spacing: 100
+                    QGCLabel {
+                        id:                  oneChannelLabel
+                        text:                qsTr("CH" + __chNumber)
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         oneChannelCombo1
+                        model:      [qsTr("A long press"),qsTr("A short press"), qsTr("B long press"),qsTr("B  short press"), qsTr("C long press"),qsTr("C  short press"), qsTr("D long press"),qsTr("D  short press")]
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                    QGCLabel {
+                        id:                  oneChannelLabel1
+                        text:                qsTr("value")
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCSlider {
+                        id:                         oneChannelSlider1
+                        orientation:                Qt.Horizontal
+                        minimumValue:               800
+                        maximumValue:               2200
+                        value:                      1900
+                        stepSize:                   1
+                        width:                      600
+
+                        onValueChanged: {
+                            oneChannelLabel1.text = oneChannelSlider1.value;
+                        }
+                    }
+                }
+                Row{
+                    id:oneChannelRow2
+                    spacing: 100
+                    QGCLabel {
+                        text:                qsTr("     ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCLabel {
+                        text:                qsTr("start value")
+                        width:      ScreenTools.defaultFontPixelWidth*9
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCLabel {
+                        id:                  oneChannelLabel2
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        text:                qsTr("value")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCSlider {
+                        id:                         oneChannelSlider2
+                        orientation:                Qt.Horizontal
+                        minimumValue:               800
+                        maximumValue:               2200
+                        value:                      1100
+                        stepSize:                   1
+                        width:                      600
+
+                        onValueChanged: {
+                            oneChannelLabel2.text = oneChannelSlider2.value;
+                        }
+                    }
+                }
+                Row{
+                    id:oneChannelRow3
+                    spacing: 100
+                    QGCLabel {
+                        text:                qsTr("     ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCLabel {
+                        text:                qsTr("Control mode")
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         oneChannelCombox
+                        model:      [qsTr("Loosen the reset"),qsTr("Loosen the keep")]
+                        width:      ScreenTools.defaultFontPixelWidth*20
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                }
+                Row{
+                    id:      oneChanneBtn
+                    spacing: 300
+
+                    QGCLabel {
+                        text:                qsTr("   ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCButton {
+                        id:                    oneChanneSaveButton
+                        text:            qsTr("SAVE")
+                        onClicked:{
+                            centreWindow.saveChSetting();
+
+                            oneChannelLyout.visible = false;
+                            mainlyout.visible = true;
+
+                            //
+                            mulRow2.visible = true;
+                            mulRow3.visible = true;
+                            mulRow4.visible = true;
+                        }
+                    }
+                    QGCButton {
+                        id:                    oneChanneCancelButton
+                        text:            qsTr("CANCEL")
+                        onClicked:{
+                            oneChannelLyout.visible = false;
+                            mainlyout.visible = true;
+
+                            //
+                            mulRow2.visible = true;
+                            mulRow3.visible = true;
+                            mulRow4.visible = true;
+                        }
+                    }
+                }
+            }
+            Column{
+                id:                   mulChannelLyout
+                anchors.fill:         parent
+                anchors.leftMargin: 300
+                anchors.topMargin: 50
+                spacing: 30
+                Row{
+                    id:mulRow1
+                    spacing: 100
+                    QGCLabel {
+                        id:                  mulChLabel
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        text:                qsTr("CH" + __chNumber)
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         mulRow1Combox
+                        model:      [qsTr("A long press"),qsTr("A  short press"), qsTr("B long press"),qsTr("B  short press"), qsTr("C long press"),qsTr("C  short press"), qsTr("D long press"),qsTr("D  short press")]
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                    QGCLabel {
+                        id:                  mulRow1Label
+                        text:                qsTr("value")
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCSlider {
+                        id:                         mulRow1Slider
+                        orientation:                Qt.Horizontal
+                        minimumValue:               800
+                        maximumValue:               2200
+                        value:                      1100
+                        stepSize:                   1
+                        width:                      600
+
+                        onValueChanged: {
+                            mulRow1Label.text = mulRow1Slider.value;
+                        }
+                    }
+                }
+                Row{
+                    id:mulRow2
+                    spacing: 100
+                    QGCLabel {
+                        text:                qsTr("     ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         mulRow2Combox
+                        model:      [qsTr("A long press"),qsTr("A  short press"), qsTr("B long press"),qsTr("B  short press"), qsTr("C long press"),qsTr("C  short press"), qsTr("D long press"),qsTr("D  short press")]
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                    QGCLabel {
+                        id:                  mulRow2Label
+                        text:                qsTr("value")
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCSlider {
+                        id:                         mulRow2Slider
+                        orientation:                Qt.Horizontal
+                        minimumValue:               800
+                        maximumValue:               2200
+                        value:                      1100
+                        stepSize:                   1
+                        width:                      600
+
+                        onValueChanged: {
+                            mulRow2Label.text = mulRow2Slider.value;
+                        }
+                    }
+                }
+                Row{
+                    id:mulRow3
+                    spacing: 100
+                    QGCLabel {
+                        text:                qsTr("     ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         mulRow3Combox
+                        model:      [qsTr("A long press"),qsTr("A  short press"), qsTr("B long press"),qsTr("B  short press"), qsTr("C long press"),qsTr("C  short press"), qsTr("D long press"),qsTr("D  short press")]
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                    QGCLabel {
+                        id:                  mulRow3Label
+                        text:                qsTr("value")
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCSlider {
+                        id:                         mulRow3Slider
+                        orientation:                Qt.Horizontal
+                        minimumValue:               800
+                        maximumValue:               2200
+                        value:                      1100
+                        stepSize:                   1
+                        width:                      600
+
+                        onValueChanged: {
+                            mulRow3Label.text = mulRow3Slider.value;
+                        }
+                    }
+                }
+                Row{
+                    id:mulRow4
+                    spacing: 100
+                    QGCLabel {
+                        text:                qsTr("     ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         mulRow4Combox
+                        model:      [qsTr("A long press"),qsTr("A  short press"), qsTr("B long press"),qsTr("B  short press"), qsTr("C long press"),qsTr("C  short press"), qsTr("D long press"),qsTr("D  short press")]
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                    QGCLabel {
+                        id:                  mulRow4Label
+                        text:                qsTr("value")
+                        anchors.top:         parent.top
+                        anchors.topMargin:   __gap1
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCSlider {
+                        id:                         mulRow4Slider
+                        orientation:                Qt.Horizontal
+                        minimumValue:               800
+                        maximumValue:               2200
+                        value:                      1100
+                        stepSize:                   1
+                        width:                      600
+
+                        onValueChanged: {
+                            mulRow4Label.text = mulRow4Slider.value;
+                        }
+                    }
+                }
+                Row{
+                    id:      mulBtn
+                    spacing: 300
+
+                    QGCLabel {
+                        text:                qsTr("   ")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+
+                    QGCButton {
+                        id:                    mulSaveButton
+                        text:            qsTr("SAVE")
+                        onClicked:{
+                            centreWindow.saveChSetting();
+
+                            mulChannelLyout.visible = false;
+                            mainlyout.visible = true;
+
+                            //
+                            mulRow2.visible = true;
+                            mulRow3.visible = true;
+                            mulRow4.visible = true;
+                        }
+                    }
+                    QGCButton {
+                        id:                    mulCancelButton
+                        text:            qsTr("CANCEL")
+                        onClicked:{
+                            mulChannelLyout.visible = false;
+                            mainlyout.visible = true;
+
+                            //
+                            mulRow2.visible = true;
+                            mulRow3.visible = true;
+                            mulRow4.visible = true;
+                        }
+                    }
+                }
+            }
+            Column{
+                id:                   videoLyout
+                anchors.fill:         parent
+                anchors.leftMargin: 500
+                anchors.topMargin: 100
+                spacing: 100
+                Row{
+                    id:videoRow
+                    spacing: 300
+                    QGCLabel {
+                        text:                qsTr("Video switch")
+                        wrapMode:               Text.WordWrap
+                        horizontalAlignment:    Text.AlignHCenter
+                    }
+                    QGCComboBox {
+                        id:         videoCombox
+                        model:      [qsTr("A long press"),qsTr("A  short press"), qsTr("B long press"),qsTr("B  short press"), qsTr("C long press"),qsTr("C  short press"), qsTr("D long press"),qsTr("D  short press")]
+                        width:      ScreenTools.defaultFontPixelWidth*12
+                        onActivated: {
+                            if (index != -1) {
+                            }
+                        }
+                    }
+                }
+                Row{
+                    id:      videoBtn
+                    spacing: 400
+                    QGCButton {
+                        id:                    videoSaveButton
+                        text:            qsTr("SAVE")
+                        onClicked:{
+                            centreWindow.saveChSetting();
+
+                            videoLyout.visible = false;
+                            mainlyout.visible = true;
+
+                            //
+                            mulRow2.visible = true;
+                            mulRow3.visible = true;
+                            mulRow4.visible = true;
+                        }
+                    }
+                    QGCButton {
+                        id:                    videoCancelButton
+                        text:            qsTr("CANCEL")
+                        onClicked:{
+                            videoLyout.visible = false;
+                            mainlyout.visible = true;
+
+                            //
+                            mulRow2.visible = true;
+                            mulRow3.visible = true;
+                            mulRow4.visible = true;
+                        }
+                    }
+                }
+            }
+            Component.onCompleted: {
+                mainlyout.visible = true;
+                oneChannelLyout.visible = false;
+                mulChannelLyout.visible = false;
+                videoLyout.visible = false;
+            }
             MessageDialog {
-                id: svrMessageDialog
+                id: testDialog
                 icon: StandardIcon.Warning
                 title: "WARNING"
-                text: "select frequency point  error, please check !"
+                text: "come in !"
                 standardButtons:    StandardButton.Ok
                 onAccepted: {
                     close()
                 }
                 Component.onCompleted: visible = false
-            }
-
-            Component.onCompleted: {
-
             }
         }
     } // QGCViewPanel

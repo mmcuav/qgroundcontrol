@@ -234,6 +234,7 @@ QGCView {
 
                     pD2dInforData.sendCalibrationCmd(3);
                     messageDialog.open();
+                    messageDialogTimer.start();
                 }
             }
 
@@ -405,6 +406,7 @@ QGCView {
                 onSetCurrentCalibrateValueSucceed:{
                     if(__isCalibrate)
                     {
+                        messageDialogTimer.stop();
                         messageDialog.close();
 
                         __isCalibrate = false;
@@ -447,7 +449,17 @@ QGCView {
                 standardButtons:    StandardButton.NoButton
                 modality:           Qt.ApplicationModal
 
-                Component.onCompleted: visible = true
+                Component.onCompleted: visible = false;
+            }
+            Timer {
+                id: messageDialogTimer
+                interval: 500
+                repeat: true
+                triggeredOnStart: true
+                running: false
+                onTriggered: {
+                    messageDialog.open();
+                }
             }
 
             Connections{
@@ -456,6 +468,7 @@ QGCView {
 
                     if(__isCalibrate)
                     {
+                        messageDialogTimer.stop();
                         messageDialog.close();
 
                         __isCalibrate = false;
@@ -513,6 +526,7 @@ QGCView {
             Connections {
                 target: pD2dInforData
                 onSignalCalibrateList: {
+                    messageDialogTimer.stop();
                     messageDialog.close();
 
                     __isCalibrate = false;
