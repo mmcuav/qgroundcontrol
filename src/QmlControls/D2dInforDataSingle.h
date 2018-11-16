@@ -119,6 +119,14 @@ private:
     //QGCTXPWRCTRL
     int clPWRctl;
 
+
+    //btn setting
+    QString getStrFromKey(QString tmpStr);
+
+    int getIndexFromStr(QString tmpStr);
+    QStringList chBtnListQStr;
+
+
 public slots:
     void newLocalConnection();
     void dataReceived();
@@ -204,7 +212,21 @@ public:
     Q_INVOKABLE  void setCliclPWRctl(int value);
 
 
+    //for btn setting
+    Q_INVOKABLE  void setKeyValue(QString KeyName,int value);
+    Q_INVOKABLE  int  getKeyValue(QString KeyName);
+    //clear ch set
+    Q_INVOKABLE  void clearChSetting(int chValue);
 
+    Q_INVOKABLE  QString getChStr(int chValue);
+    Q_INVOKABLE  QString getChModelStr(QString KeyName);
+
+
+    //get ch btn setting
+    Q_INVOKABLE  int getComboxList(int chValue);
+
+    //get keyname from combox index
+    Q_INVOKABLE  QString  getKeyNameFromCombox(int index);
 
 };
 #endif // D2DINFORDATASINGLE_H
