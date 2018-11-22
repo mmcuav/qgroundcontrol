@@ -133,8 +133,6 @@ public slots:
 
 signals:
     void signalList();
-    void signalCalibrateList();//calibrate
-
     //signl for maintoolbar
     void signalUpRate();
     void signalUpBw();

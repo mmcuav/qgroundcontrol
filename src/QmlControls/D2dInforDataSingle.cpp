@@ -142,12 +142,6 @@ void D2dInforDataSingle::dataReceived()
        {
            qCritical() << "D2dInforDataSingle dataReceived:" << sendCmdStr << " QGC_CMD_FAIL_TAG.";
 
-           if(sendCmdStr == "QGCFREQNEG")
-           {
-               emit signalCalibrateList();
-               return;
-           }
-
            if(whichCalibrateFromFlag)
            {
                emit maintoolbarCalibrateFalied();

@@ -32,7 +32,6 @@ Rectangle {
 
     property var    _videoReceiver:     QGroundControl.videoManager.videoReceiver
 
-    property real __timerSec: 10
 
     signal showSettingsView
     signal showSetupView
@@ -295,21 +294,12 @@ Rectangle {
 
     Timer {
         id: showMessageDialogTimer
-        interval: 3000
+        interval: 500
         repeat: true
         triggeredOnStart: true
         running: false
         onTriggered: {
-            __timerSec--;
-            if(__timerSec < 0)
-            {
-                showMessageDialog.close();
-                svrMessageDialog.close();
-                __timerSec = 10;
-                showMessageDialogTimer.stop();
-                resultDialog.text = "calibrate failed.";
-                resultDialog.open();
-            }
+            showMessageDialog.open();
         }
     }
 

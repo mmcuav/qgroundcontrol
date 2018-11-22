@@ -523,34 +523,6 @@ QGCView {
                 }
             }
 
-            Connections {
-                target: pD2dInforData
-                onSignalCalibrateList: {
-                    messageDialogTimer.stop();
-                    messageDialog.close();
-
-                    __isCalibrate = false;
-
-                    urulCombo.visible = !__isCalibrate;
-                    urDlCombo.visible = !__isCalibrate;
-
-                    manualSetValue.visible = !__isCalibrate;
-                    labelRec.visible = !__isCalibrate;
-
-                    okButton.visible = !__isCalibrate;
-                    manualBtn.visible = !__isCalibrate;
-                    autoBtn.visible = !__isCalibrate;
-
-                    //set flag
-                    pD2dInforData.setIsCalibrateFlag(__isCalibrate);
-
-                    //
-                    svrMessageDialog.text = qsTr("calibrate failed.");
-                    svrMessageDialog.open();
-                }
-            }
-
-
             //update data
             Connections{
                 target: pD2dInforData;
