@@ -15,6 +15,7 @@
 #include "Joystick.h"
 #include "MultiVehicleManager.h"
 #include "QGCToolbox.h"
+#include "JoystickMessageSender.h"
 
 #include <QVariantList>
 
@@ -66,6 +67,7 @@ private:
     Joystick*                   _activeJoystick;
     QMap<QString, Joystick*>    _name2JoystickMap;
     MultiVehicleManager*        _multiVehicleManager;
+    JoystickMessageSender*      _joystickMessageSender;
     
     static const char * _settingsGroup;
     static const char * _settingsKeyActiveJoystick;

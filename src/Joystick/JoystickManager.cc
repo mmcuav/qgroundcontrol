@@ -31,6 +31,7 @@ JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , _activeJoystick(NULL)
     , _multiVehicleManager(NULL)
+    , _joystickMessageSender(NULL)
 {
 }
 
@@ -40,6 +41,9 @@ JoystickManager::~JoystickManager() {
         qDebug() << "Releasing joystick:" << i.key();
         delete i.value();
     }
+    if(_joystickMessageSender) {
+        delete _joystickMessageSender;
+    }
     qDebug() << "Done";
 }
 
@@ -48,6 +52,7 @@ void JoystickManager::setToolbox(QGCToolbox *toolbox)
     QGCTool::setToolbox(toolbox);
 
     _multiVehicleManager = _toolbox->multiVehicleManager();
+    _joystickMessageSender = new JoystickMessageSender(this);
 
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
 }

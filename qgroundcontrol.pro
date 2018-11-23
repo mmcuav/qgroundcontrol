@@ -508,6 +508,7 @@ HEADERS += \
     src/FollowMe/FollowMe.h \
     src/Joystick/Joystick.h \
     src/Joystick/JoystickManager.h \
+    src/Joystick/JoystickMessageSender.h \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
@@ -706,6 +707,7 @@ SOURCES += \
     src/FollowMe/FollowMe.cc \
     src/Joystick/Joystick.cc \
     src/Joystick/JoystickManager.cc \
+    src/Joystick/JoystickMessageSender.cc \
     src/JsonHelper.cc \
     src/LogCompressor.cc \
     src/MissionManager/CameraCalc.cc \
