@@ -4,6 +4,7 @@
 #include "Joystick.h"
 #include "Vehicle.h"
 #include "MultiVehicleManager.h"
+#include "JoystickManager.h"
 
 #include <jni.h>
 #include <QtCore/private/qjni_p.h>
@@ -15,10 +16,10 @@
 class JoystickAndroid : public Joystick, public QtAndroidPrivate::GenericMotionEventListener, public QtAndroidPrivate::KeyEventListener
 {
 public:
-    JoystickAndroid(const QString& name, int axisCount, int buttonCount, int id, MultiVehicleManager* multiVehicleManager);
+    JoystickAndroid(const QString& name, int axisCount, int buttonCount, int id, MultiVehicleManager* multiVehicleManager, JoystickManager* joystickManager);
     ~JoystickAndroid();
 
-    static QMap<QString, Joystick*> discover(MultiVehicleManager* _multiVehicleManager); 
+    static QMap<QString, Joystick*> discover(MultiVehicleManager* _multiVehicleManager, JoystickManager* _joystickManager);
 
 private:
     bool handleKeyEvent(jobject event);

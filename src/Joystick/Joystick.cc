@@ -12,6 +12,7 @@
 #include "QGC.h"
 #include "AutoPilotPlugin.h"
 #include "UAS.h"
+#include "JoystickManager.h"
 
 #include <QSettings>
 
@@ -42,7 +43,7 @@ const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
 
 int Joystick::_transmitterMode = 2;
 
-Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
+Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager, JoystickManager* joystickManager)
     : _exitThread(false)
     , _name(name)
     , _axisCount(axisCount)
@@ -64,6 +65,7 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     , _activeVehicle(NULL)
     , _pollingStartedForCalibration(false)
     , _multiVehicleManager(multiVehicleManager)
+    , _joystickManager(joystickManager)
 {
 
     _rgAxisValues = new int[_axisCount];
@@ -481,8 +483,10 @@ void Joystick::run(void)
             }
 
             // Adjust throttle to 0:1 range
-            if (_throttleMode == ThrottleModeCenterZero && _activeVehicle->supportsThrottleModeCenterZero()) {
-                if (!_activeVehicle->supportsNegativeThrust() || !_negativeThrust) {
+            bool supportsNegativeThrust = (_activeVehicle) ? _activeVehicle->supportsThrottleModeCenterZero() : _joystickManager->supportsThrottleModeCenterZero();
+            bool supportsThrottleModeCenterZero = (_activeVehicle) ? _activeVehicle->supportsThrottleModeCenterZero() : _joystickManager->supportsThrottleModeCenterZero();
+            if (_throttleMode == ThrottleModeCenterZero && supportsThrottleModeCenterZero) {
+                if (!supportsNegativeThrust || !_negativeThrust) {
                     throttle = std::max(0.0f, throttle);
                 }
             } else {
@@ -492,7 +496,7 @@ void Joystick::run(void)
             // Set up button pressed information
 
             // We only send the buttons the firmwware has reserved
-            int reservedButtonCount = _activeVehicle->manualControlReservedButtonCount();
+            int reservedButtonCount = (_activeVehicle) ? _activeVehicle->manualControlReservedButtonCount() : _joystickManager->manualControlReservedButtonCount();
             if (reservedButtonCount == -1) {
                 reservedButtonCount = _totalButtonCount;
             }
@@ -533,7 +537,7 @@ void Joystick::run(void)
 
             qCDebug(JoystickValuesLog) << "name:roll:pitch:yaw:throttle:buttons" << name() << roll << -pitch << yaw << throttle << buttonPressedBits;
 
-            emit manualControl(roll, -pitch, yaw, throttle, buttonPressedBits, _activeVehicle->joystickMode());
+            emit manualControl(roll, -pitch, yaw, throttle, buttonPressedBits, (_activeVehicle) ? _activeVehicle->joystickMode() : _joystickManager->joystickMode());
         }
 
         // Sleep, update rate of joystick is approx. 25 Hz (1000 ms / 25 = 40 ms)
@@ -573,6 +577,12 @@ void Joystick::startPolling(Vehicle* vehicle)
             // FIXME: ****
             //connect(this, &Joystick::buttonActionTriggered, uas, &UAS::triggerAction);
         }
+    } else {
+        if ( !_calibrated ) {
+            _joystickManager->setJoystickEnabled(false);
+        }
+        // Update qml in case of joystick transition
+        emit calibratedChanged(_calibrated);
     }
 
 

@@ -187,7 +187,7 @@ SetupPage {
                         QGCLabel {
                             id:     rollLabel
                             width:  defaultTextWidth * 10
-                            text:   _activeVehicle.sub ? qsTr("Lateral") : qsTr("Roll")
+                            text:   (_activeVehicle) ? (_activeVehicle.sub ? qsTr("Lateral") : qsTr("Roll")) : qsTr("Roll")
                         }
 
                         Loader {
@@ -217,7 +217,7 @@ SetupPage {
                         QGCLabel {
                             id:     pitchLabel
                             width:  defaultTextWidth * 10
-                            text:   _activeVehicle.sub ? qsTr("Forward") : qsTr("Pitch")
+                            text:   (_activeVehicle) ? (_activeVehicle.sub ? qsTr("Forward") : qsTr("Pitch")) : qsTr("Pitch")
                         }
 
                         Loader {
@@ -364,16 +364,16 @@ SetupPage {
                                 id:         enabledCheckBox
                                 enabled:    false
                                 text:       _activeJoystick ? _activeJoystick.calibrated ? qsTr("Enable joystick input") : qsTr("Enable not allowed (Calibrate First)") : ""
-                                checked:    _activeVehicle.joystickEnabled
+                                checked:    (_activeVehicle) ? (_activeVehicle.joystickEnabled) : (joystickManager.joystickEnabled)
 
-                                onClicked:  _activeVehicle.joystickEnabled = checked
+                                onClicked:  (_activeVehicle) ? (_activeVehicle.joystickEnabled = checked) : (joystickManager.joystickEnabled = checked)
 
                                 Connections {
                                     target: joystickManager
 
                                     onActiveJoystickChanged: {
                                         if(_activeJoystick) {
-                                            enabledCheckBox.checked = Qt.binding(function() { return _activeJoystick.calibrated && _activeVehicle.joystickEnabled })
+                                            enabledCheckBox.checked = Qt.binding(function() { return _activeJoystick.calibrated && ((_activeVehicle) ? _activeVehicle.joystickEnabled : joystickManager.joystickEnabled) })
                                         }
                                     }
                                 }
@@ -419,7 +419,7 @@ SetupPage {
 
                             Column {
                                 spacing: ScreenTools.defaultFontPixelHeight / 3
-                                visible: _activeVehicle.supportsThrottleModeCenterZero
+                                visible: (_activeVehicle) ? _activeVehicle.supportsThrottleModeCenterZero : joystickManager.supportsThrottleModeCenterZero
 
                                 ExclusiveGroup { id: throttleModeExclusiveGroup }
 
@@ -455,10 +455,10 @@ SetupPage {
                                 }
 
                                 QGCCheckBox {
-                                    visible:        _activeVehicle.supportsNegativeThrust
+                                    visible:        (_activeVehicle) ? _activeVehicle.supportsNegativeThrust : joystickManager.supportsNegativeThrust
                                     id:             negativeThrust
                                     text:           qsTr("Allow negative Thrust")
-                                    enabled:        _activeJoystick.negativeThrust = _activeVehicle.supportsNegativeThrust
+                                    enabled:        _activeJoystick.negativeThrust = ((_activeVehicle) ? _activeVehicle.supportsNegativeThrust : joystickManager.supportsNegativeThrust)
                                     checked:        _activeJoystick ? _activeJoystick.negativeThrust : false
                                     onClicked:      _activeJoystick.negativeThrust = checked
                                 }
@@ -491,12 +491,12 @@ SetupPage {
 
                             QGCCheckBox {
                                 id:         advancedSettings
-                                checked:    _activeVehicle.joystickMode != 0
+                                checked:    (_activeVehicle) ? (_activeVehicle.joystickMode != 0) : (joystickManager.joystickMode != 0)
                                 text:       qsTr("Advanced settings (careful!)")
 
                                 onClicked: {
                                     if (!checked) {
-                                        _activeVehicle.joystickMode = 0
+                                        (_activeVehicle) ? (_activeVehicle.joystickMode = 0) : (joystickManager.joystickMode = 0)
                                     }
                                 }
                             }
@@ -514,11 +514,11 @@ SetupPage {
 
                                 QGCComboBox {
                                     id:             joystickModeCombo
-                                    currentIndex:   _activeVehicle.joystickMode
+                                    currentIndex:   (_activeVehicle) ? _activeVehicle.joystickMode : joystickManager.joystickMode
                                     width:          ScreenTools.defaultFontPixelWidth * 20
-                                    model:          _activeVehicle.joystickModes
+                                    model:          (_activeVehicle) ? _activeVehicle.joystickModes : joystickManager.joystickModes
 
-                                    onActivated: _activeVehicle.joystickMode = index
+                                    onActivated: (_activeVehicle) ? (_activeVehicle.joystickMode = index) : (joystickManager.joystickMode = index)
                                 }
                             }
 
@@ -564,10 +564,11 @@ SetupPage {
                             spacing:    ScreenTools.defaultFontPixelHeight / 3
 
                             QGCLabel {
-                                visible: _activeVehicle.manualControlReservedButtonCount != 0
+                                visible: (_activeVehicle) ? (_activeVehicle.manualControlReservedButtonCount != 0) : (joystickManager.manualControlReservedButtonCount != 0)
                                 text: qsTr("Buttons 0-%1 reserved for firmware use").arg(reservedButtonCount)
 
-                                property int reservedButtonCount: _activeVehicle.manualControlReservedButtonCount == -1 ? _activeJoystick.totalButtonCount : _activeVehicle.manualControlReservedButtonCount
+                                property int reservedButtonCount: ((_activeVehicle) ? (_activeVehicle.manualControlReservedButtonCount == -1) : joystickManager.manualControlReservedButtonCount == -1) ?
+                                                                      _activeJoystick.totalButtonCount : ((_activeVehicle) ? _activeVehicle.manualControlReservedButtonCount : joystickManager.manualControlReservedButtonCount)
                             }
 
                             Repeater {
@@ -576,7 +577,8 @@ SetupPage {
 
                                 Row {
                                     spacing: ScreenTools.defaultFontPixelWidth
-                                    visible: (_activeVehicle.manualControlReservedButtonCount == -1 ? false : modelData >= _activeVehicle.manualControlReservedButtonCount) && !_activeVehicle.supportsJSButton
+                                    visible: (_activeVehicle) ? ((_activeVehicle.manualControlReservedButtonCount == -1 ? false : modelData >= _activeVehicle.manualControlReservedButtonCount) && !_activeVehicle.supportsJSButton)
+                                                              : ((joystickManager.manualControlReservedButtonCount == -1 ? false : modelData >= joystickManager.manualControlReservedButtonCount) && !joystickManager.supportsJSButton)
 
                                     property bool pressed
 
@@ -618,7 +620,7 @@ SetupPage {
 
                             Row {
                                 spacing: ScreenTools.defaultFontPixelWidth
-                                visible: _activeVehicle.supportsJSButton
+                                visible: (_activeVehicle) ? _activeVehicle.supportsJSButton : joystickManager.supportsJSButton
 
                                 QGCLabel {
                                     horizontalAlignment:    Text.AlignHCenter
@@ -643,7 +645,7 @@ SetupPage {
 
                                 Row {
                                     spacing: ScreenTools.defaultFontPixelWidth
-                                    visible: _activeVehicle.supportsJSButton
+                                    visible: (_activeVehicle) ? _activeVehicle.supportsJSButton : joystickManager.supportsJSButton
 
                                     property bool pressed
 

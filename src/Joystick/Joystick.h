@@ -26,7 +26,7 @@ class Joystick : public QThread
     Q_OBJECT
 
 public:
-    Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager);
+    Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager, JoystickManager* joystickManager);
 
     ~Joystick();
 
@@ -235,6 +235,7 @@ protected:
     bool                _pollingStartedForCalibration;
 
     MultiVehicleManager*    _multiVehicleManager;
+    JoystickManager*        _joystickManager;
 
 private:
     static const char*  _rgFunctionSettingsKey[maxFunction];

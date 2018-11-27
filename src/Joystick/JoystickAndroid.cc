@@ -10,8 +10,8 @@ int JoystickAndroid::ACTION_DOWN;
 int JoystickAndroid::ACTION_UP;
 QMutex JoystickAndroid::m_mutex;
 
-JoystickAndroid::JoystickAndroid(const QString& name, int axisCount, int buttonCount, int id, MultiVehicleManager* multiVehicleManager)
-    : Joystick(name,axisCount,buttonCount,0,multiVehicleManager)
+JoystickAndroid::JoystickAndroid(const QString& name, int axisCount, int buttonCount, int id, MultiVehicleManager* multiVehicleManager, JoystickManager* joystickManager)
+    : Joystick(name,axisCount,buttonCount,0,multiVehicleManager,joystickManager)
     , deviceId(id)
 {
     int i;
@@ -69,7 +69,7 @@ JoystickAndroid::~JoystickAndroid() {
 }
 
 
-QMap<QString, Joystick*> JoystickAndroid::discover(MultiVehicleManager* _multiVehicleManager) {
+QMap<QString, Joystick*> JoystickAndroid::discover(MultiVehicleManager* _multiVehicleManager, JoystickManager* _joystickManager) {
     bool joystickFound = false;
     static QMap<QString, Joystick*> ret;
 
@@ -119,7 +119,7 @@ QMap<QString, Joystick*> JoystickAndroid::discover(MultiVehicleManager* _multiVe
 
         qCDebug(JoystickLog) << "\t" << name << "id:" << buff[i] << "axes:" << axisCount << "buttons:" << buttonCount;
 
-        ret[name] = new JoystickAndroid(name, axisCount, buttonCount, buff[i], _multiVehicleManager);
+        ret[name] = new JoystickAndroid(name, axisCount, buttonCount, buff[i], _multiVehicleManager, _joystickManager);
         joystickFound = true;
     }
 

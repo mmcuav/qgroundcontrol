@@ -26,13 +26,18 @@ QGC_LOGGING_CATEGORY(JoystickManagerLog, "JoystickManagerLog")
 
 const char * JoystickManager::_settingsGroup =              "JoystickManager";
 const char * JoystickManager::_settingsKeyActiveJoystick =  "ActiveJoystick";
+const char * JoystickManager::_joystickModeSettingsKey =    "JoystickMode";
+const char * JoystickManager::_joystickEnabledSettingsKey = "JoystickEnabled";
 
 JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , _activeJoystick(NULL)
     , _multiVehicleManager(NULL)
     , _joystickMessageSender(NULL)
+    , _joystickMode(Vehicle::JoystickModeRC)
+    , _joystickEnabled(false)
 {
+    connect(this, &JoystickManager::activeJoystickChanged, this, &JoystickManager::_loadSettings);
 }
 
 JoystickManager::~JoystickManager() {
@@ -45,6 +50,115 @@ JoystickManager::~JoystickManager() {
         delete _joystickMessageSender;
     }
     qDebug() << "Done";
+}
+
+bool JoystickManager::supportsThrottleModeCenterZero(void)
+{
+    return true;//default config for generic vehicle
+}
+
+bool JoystickManager::supportsNegativeThrust(void)
+{
+    return false;//default config for generic vehicle
+}
+bool JoystickManager::supportsJSButton(void)
+{
+    return false;//default config for generic vehicle
+}
+int  JoystickManager::manualControlReservedButtonCount(void)
+{
+    return 0;//default config for generic vehicle
+}
+
+void JoystickManager::_loadSettings(void)
+{
+    QSettings settings;
+
+    if(!_activeJoystick)
+        return;
+
+    qCritical(JoystickManagerLog) << "djz--current joystick name:" << _activeJoystick->name();
+
+    settings.beginGroup(_settingsGroup);
+
+    bool convertOk;
+
+    _joystickMode = (Vehicle::JoystickMode_t)settings.value(_joystickModeSettingsKey, Vehicle::JoystickModeRC).toInt(&convertOk);
+    if (!convertOk) {
+        _joystickMode = Vehicle::JoystickModeRC;
+    }
+
+    // Joystick enabled is a global setting so first make sure there are any joysticks connected
+    if (_toolbox->joystickManager()->joysticks().count()) {
+        setJoystickEnabled(settings.value(_joystickEnabledSettingsKey, false).toBool());
+    }
+}
+
+void JoystickManager::_saveSettings(void)
+{
+    QSettings settings;
+
+    settings.beginGroup(_settingsGroup);
+
+    settings.setValue(_joystickModeSettingsKey, _joystickMode);
+
+    // The joystick enabled setting should only be changed if a joystick is present
+    // since the checkbox can only be clicked if one is present
+    if (_toolbox->joystickManager()->joysticks().count()) {
+        settings.setValue(_joystickEnabledSettingsKey, _joystickEnabled);
+    }
+}
+
+int JoystickManager::joystickMode(void)
+{
+    return _joystickMode;
+}
+
+void JoystickManager::setJoystickMode(int mode)
+{
+    if (mode < 0 || mode >= Vehicle::JoystickModeMax) {
+        qCWarning(VehicleLog) << "Invalid joystick mode" << mode;
+        return;
+    }
+
+    _joystickMode = (Vehicle::JoystickMode_t)mode;
+    _saveSettings();
+    emit joystickModeChanged(mode);
+}
+
+QStringList JoystickManager::joystickModes(void)
+{
+    QStringList list;
+
+    list << "Normal" << "Attitude" << "Position" << "Force" << "Velocity";
+
+    return list;
+}
+
+bool JoystickManager::joystickEnabled(void)
+{
+    return _joystickEnabled;
+}
+
+void JoystickManager::setJoystickEnabled(bool enabled)
+{
+    _joystickEnabled = enabled;
+    _startJoystick(_joystickEnabled);
+    _saveSettings();
+    emit joystickEnabledChanged(_joystickEnabled);
+}
+
+void JoystickManager::_startJoystick(bool start)
+{
+    if (_activeJoystick) {
+        if (start) {
+            if (_joystickEnabled) {
+                _activeJoystick->startPolling(NULL);
+            }
+        } else {
+            _activeJoystick->stopPolling();
+        }
+    }
 }
 
 void JoystickManager::setToolbox(QGCToolbox *toolbox)
@@ -76,9 +190,9 @@ void JoystickManager::_setActiveJoystickFromSettings(void)
 
 #ifdef __sdljoystick__
     // Get the latest joystick mapping
-    newMap = JoystickSDL::discover(_multiVehicleManager);
+    newMap = JoystickSDL::discover(_multiVehicleManager, this);
 #elif defined(__android__)
-    newMap = JoystickAndroid::discover(_multiVehicleManager);
+    newMap = JoystickAndroid::discover(_multiVehicleManager, this);
 #endif
 
     if (_activeJoystick && !newMap.contains(_activeJoystick->name())) {
