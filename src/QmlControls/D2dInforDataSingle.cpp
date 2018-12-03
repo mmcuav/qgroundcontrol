@@ -117,9 +117,6 @@ void D2dInforDataSingle::dataReceived()
            {
                return;
            }
-           //getFrequencyList();
-           //emit calibrateSucceed();
-           //emit signalCalibrateList();
        }
        else if (vTemp.contains(QGC_CMD_SUCCESS_TAG)) //receive
        {
@@ -425,7 +422,7 @@ void D2dInforDataSingle::getFrequencyList()
         cliDataList.append(data);
     }
     //calibrate also update
-    emit signalCalibrateList();
+    //emit signalCalibrateList();
 }
 
 QList<QObject*> D2dInforDataSingle::getModelList()
