@@ -286,7 +286,7 @@ VideoReceiver::start()
             QUrl url(_uri);
             g_object_set(G_OBJECT(dataSource), "host", qPrintable(url.host()), "port", url.port(), NULL );
         } else {
-            g_object_set(G_OBJECT(dataSource), "location", qPrintable(_uri), "latency", 40, "udp-reconnect", 1, "timeout", static_cast<guint64>(0), "do-retransmission", false, NULL);
+            g_object_set(G_OBJECT(dataSource), "location", qPrintable(_uri), "latency", 41, "udp-reconnect", 1, "timeout", static_cast<guint64>(0), "do-retransmission", false, NULL);
         }
 
         // Currently, we expect H264 when using anything except for TCP.  Long term we may want this to be settable
