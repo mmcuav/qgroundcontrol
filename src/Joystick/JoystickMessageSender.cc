@@ -12,18 +12,22 @@
 #include "QGCApplication.h"
 #include "UDPLink.h"
 #include "JoystickMessageSender.h"
+#include "KeyConfiguration.h"
 
 QGC_LOGGING_CATEGORY(JoystickMessageSenderLog, "JoystickMessageSenderLog")
 
 JoystickMessageSender::JoystickMessageSender(JoystickManager* joystickManager)
     : QObject()
     , _activeJoystick(NULL)
+    , _joystickManager(joystickManager)
     , _udpLink(NULL)
     , _joystickPortNumber(16666)
     , _joystickCompId(66)
     , _remoteHostIp("192.168.0.10")
     , _mavlinkChannel(0)
+    , _channelCount(5)
 {
+    memset(_channelValues, 0, sizeof(_channelValues));
     connect(joystickManager, &JoystickManager::activeJoystickChanged, this, &JoystickMessageSender::_activeJoystickChanged);
 }
 
@@ -102,10 +106,6 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     const float ch2 = (-pitch+1) * axesScaling;
     const float ch3 = (yaw+1) * axesScaling;
     const float ch4 = thrust * axesScaling;
-    int max = buttons / 256;
-    int unit = (max == 0) ? 0 : (2000 / max);
-    uint8_t state = (uint8_t)buttons;
-    const float ch5 = unit * state;
 
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     mavlink_message_t message;
@@ -115,8 +115,9 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
                                  &message,
                                  0, 5,
                                  ch1, ch2, ch3, ch4,
-                                 ch5, 0, 0, 0,
-                                 0, 0, 0, 0,
+                                 _channelValues[0], _channelValues[1],
+                                 _channelValues[2], _channelValues[3],
+                                 _channelValues[4], 0, 0, 0,
                                  0, 0, 0, 0,
                                  0, 0, 255);
 
@@ -140,4 +141,39 @@ void JoystickMessageSender::_activeJoystickChanged(Joystick* joystick)
         _activeJoystick = joystick;
         connect(_activeJoystick, &Joystick::manualControl, this, &JoystickMessageSender::_handleManualControl);
     }
+}
+
+QVariantList JoystickMessageSender::channelSeqs()
+{
+    KeyConfiguration* conf = _joystickManager->keyConfiguration();
+    QVariantList list;
+
+    for (int i=0; i<_channelCount; i++) {
+        if (conf == NULL) {
+            list += QVariant::fromValue(0);
+        } else {
+            list += QVariant::fromValue(conf->getSeqInChannel(i+5, _channelValues[i]));
+        }
+    }
+    return list;
+}
+
+int JoystickMessageSender::getChannelValue(int ch)
+{
+    return _channelValues[ch];
+}
+
+void JoystickMessageSender::setChannelValue(int ch, uint16_t value)
+{
+    if (ch >= _channelCount) {
+        qWarning() << "invalid channel id" << ch;
+        return;
+    }
+    _channelValues[ch] = value;
+    emit channelSeqsChanged();
+}
+
+int JoystickMessageSender::channelCount()
+{
+    return _channelCount;
 }

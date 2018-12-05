@@ -32,7 +32,6 @@ const char* Joystick::_multiRotorTXModeSettingsKey =    "TXMode_MultiRotor";
 const char* Joystick::_roverTXModeSettingsKey =         "TXMode_Rover";
 const char* Joystick::_vtolTXModeSettingsKey =          "TXMode_VTOL";
 const char* Joystick::_submarineTXModeSettingsKey =     "TXMode_Submarine";
-const char* Joystick::_volumeKeysSwitchModeKey =        "VolumeKeysSwitchMode";
 
 const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
     "RollAxis",
@@ -51,7 +50,6 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     , _hatCount(hatCount)
     , _hatButtonCount(4*hatCount)
     , _totalButtonCount(_buttonCount+_hatButtonCount)
-    , _volumeKeysSwitchMode(false)
     , _calibrationMode(CalibrationModeOff)
     , _rgAxisValues(NULL)
     , _rgCalibration(NULL)
@@ -184,8 +182,6 @@ void Joystick::_loadSettings(void)
     _accumulator = settings.value(_accumulatorSettingsKey, false).toBool();
     _deadband = settings.value(_deadbandSettingsKey, false).toBool();
 
-    _volumeKeysSwitchMode = settings.value(_volumeKeysSwitchModeKey, false).toBool();
-
     _throttleMode = (ThrottleMode_t)settings.value(_throttleModeSettingsKey, ThrottleModeCenterZero).toInt(&convertOk);
     badSettings |= !convertOk;
 
@@ -264,8 +260,6 @@ void Joystick::_saveSettings(void)
     settings.setValue(_throttleModeSettingsKey, _throttleMode);
 
     qCDebug(JoystickLog) << "_saveSettings calibrated:throttlemode:deadband:txmode" << _calibrated << _throttleMode << _deadband << _transmitterMode;
-
-    settings.setValue(_volumeKeysSwitchModeKey, _volumeKeysSwitchMode);
 
     QString minTpl  ("Axis%1Min");
     QString maxTpl  ("Axis%1Max");
@@ -531,11 +525,7 @@ void Joystick::run(void)
 
             _lastButtonBits = newButtonBits;
 
-            if (volumeKeysSwitchMode()) {
-                buttonPressedBits = _modeButtonState | (_modeButtonStateMax << 8);
-            }
-
-            qCDebug(JoystickValuesLog) << "name:roll:pitch:yaw:throttle:buttons" << name() << roll << -pitch << yaw << throttle << buttonPressedBits;
+            qCDebug(JoystickValuesLog) << "name:roll:pitch:yaw:throttle" << name() << roll << -pitch << yaw << throttle;
 
             emit manualControl(roll, -pitch, yaw, throttle, buttonPressedBits, (_activeVehicle) ? _activeVehicle->joystickMode() : _joystickManager->joystickMode());
         }
@@ -775,19 +765,6 @@ void Joystick::setDeadband(bool deadband)
     _deadband = deadband;
 
     _saveSettings();
-}
-
-bool Joystick::volumeKeysSwitchMode()
-{
-    return _volumeKeysSwitchMode;
-}
-
-void Joystick::setVolumeKeysSwitchMode(bool enable)
-{
-    _volumeKeysSwitchMode = enable;
-
-    _saveSettings();
-    emit volumeKeysSwitchModeChanged(_volumeKeysSwitchMode);
 }
 
 void Joystick::startCalibrationMode(CalibrationMode_t mode)

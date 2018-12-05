@@ -34,6 +34,7 @@ JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     , _activeJoystick(NULL)
     , _multiVehicleManager(NULL)
     , _joystickMessageSender(NULL)
+    , _keyConfiguration(NULL)
     , _joystickMode(Vehicle::JoystickModeRC)
     , _joystickEnabled(false)
 {
@@ -148,6 +149,11 @@ void JoystickManager::setJoystickEnabled(bool enabled)
     emit joystickEnabledChanged(_joystickEnabled);
 }
 
+KeyConfiguration* JoystickManager::keyConfiguration()
+{
+    return _keyConfiguration;
+}
+
 void JoystickManager::_startJoystick(bool start)
 {
     if (_activeJoystick) {
@@ -167,6 +173,7 @@ void JoystickManager::setToolbox(QGCToolbox *toolbox)
 
     _multiVehicleManager = _toolbox->multiVehicleManager();
     _joystickMessageSender = new JoystickMessageSender(this);
+    _keyConfiguration = new KeyConfiguration(this);
 
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
 }

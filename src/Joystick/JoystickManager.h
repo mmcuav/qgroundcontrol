@@ -16,6 +16,7 @@
 #include "MultiVehicleManager.h"
 #include "QGCToolbox.h"
 #include "JoystickMessageSender.h"
+#include "KeyConfiguration.h"
 
 #include <QVariantList>
 
@@ -46,6 +47,9 @@ public:
     Q_PROPERTY(bool                 supportsJSButton        READ supportsJSButton                                       CONSTANT)
     Q_PROPERTY(int manualControlReservedButtonCount READ manualControlReservedButtonCount CONSTANT)
 
+    Q_PROPERTY(KeyConfiguration* keyConfiguration READ keyConfiguration CONSTANT)
+    Q_PROPERTY(JoystickMessageSender* joystickMessageSender READ joystickMessageSender CONSTANT)
+
     bool supportsThrottleModeCenterZero(void);
     bool supportsNegativeThrust(void);
     bool supportsJSButton(void);
@@ -72,6 +76,9 @@ public:
     bool joystickEnabled(void);
     void setJoystickEnabled(bool enabled);
 
+    KeyConfiguration* keyConfiguration();
+    JoystickMessageSender* joystickMessageSender(void) { return _joystickMessageSender; }
+
 public slots:
     void init();
 
@@ -97,6 +104,7 @@ private:
     QMap<QString, Joystick*>    _name2JoystickMap;
     MultiVehicleManager*        _multiVehicleManager;
     JoystickMessageSender*      _joystickMessageSender;
+    KeyConfiguration*        _keyConfiguration;
     
     static const char * _settingsGroup;
     static const char * _settingsKeyActiveJoystick;

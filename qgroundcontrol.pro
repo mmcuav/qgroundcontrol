@@ -392,7 +392,6 @@ HEADERS += \
     src/api/QGCSettings.h \
     src/QmlControls/D2dInforDataSingle.h \
     src/QmlControls/Freqcalibrationmodel.h \
-    src/api/QmlComponentInfo.h
     src/api/QmlComponentInfo.h \
 
 SOURCES += \
@@ -401,7 +400,6 @@ SOURCES += \
     src/api/QGCSettings.cc \
     src/QmlControls/D2dInforDataSingle.cpp \
     src/QmlControls/Freqcalibrationmodel.cpp \
-    src/api/QmlComponentInfo.cc
     src/api/QmlComponentInfo.cc \
 
 #
@@ -509,6 +507,7 @@ HEADERS += \
     src/Joystick/Joystick.h \
     src/Joystick/JoystickManager.h \
     src/Joystick/JoystickMessageSender.h \
+    src/Joystick/KeyConfiguration.h \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
@@ -708,6 +707,7 @@ SOURCES += \
     src/Joystick/Joystick.cc \
     src/Joystick/JoystickManager.cc \
     src/Joystick/JoystickMessageSender.cc \
+    src/Joystick/KeyConfiguration.cc \
     src/JsonHelper.cc \
     src/LogCompressor.cc \
     src/MissionManager/CameraCalc.cc \

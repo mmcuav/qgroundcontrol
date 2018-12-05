@@ -66,8 +66,6 @@ public:
             delete pCalibration;
         if(pD2dInfo)
             delete pD2dInfo;
-        if(pBtnSetting)
-            delete pBtnSetting;
 #if defined(QT_DEBUG)
         if(pMockLink)
             delete pMockLink;
@@ -84,7 +82,6 @@ public:
     QmlComponentInfo* pConsole;
     QmlComponentInfo* pCalibration;
     QmlComponentInfo* pD2dInfo;
-    QmlComponentInfo* pBtnSetting;
 #if defined(QT_DEBUG)
     QmlComponentInfo* pMockLink;
     QmlComponentInfo* pDebug;
@@ -155,10 +152,6 @@ QVariantList &QGCCorePlugin::settingsPages()
         _p->pD2dInfo = new QmlComponentInfo(tr("D2d Info "),
                                        QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/D2dInfo.qml"));
         _p->settingsList.append(QVariant::fromValue((QmlComponentInfo*)_p->pD2dInfo));
-
-        _p->pBtnSetting = new QmlComponentInfo(tr("Set Buttons "),
-                                       QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/BtnSetting.qml"));
-        //_p->settingsList.append(QVariant::fromValue((QmlComponentInfo*)_p->pBtnSetting));
 
 
 #if defined(QT_DEBUG)

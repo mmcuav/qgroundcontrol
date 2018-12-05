@@ -53,6 +53,7 @@ SetupPage {
 
             property var _activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
             property var _activeJoystick:   joystickManager.activeJoystick
+            property var _joystickMessageSender: joystickManager.joystickMessageSender
 
             JoystickConfigController {
                 id:             controller
@@ -164,7 +165,23 @@ SetupPage {
             } // Component - axisMonitorDisplayComponent
 
             // Main view Qml starts here
+            Row {
+                id:         keySettingRow
+                visible:    false
+                Loader {
+                    id:     keySettingLoader
+                }
+                QGCButton {
+                    id:     backButton
+                    text:   qsTr("Joystick settings")
 
+                    onClicked: {
+                        keySettingRow.visible = false;
+                        leftColumn.visible = true;
+                        rightColumn.visible = true;
+                    }
+                }
+            }
             // Left side column
             Column {
                 id:                     leftColumn
@@ -802,8 +819,41 @@ SetupPage {
                     }
                 } // Column - Axis Monitor
 
+                // Channel monitor
+                Column {
+                    width:          parent.width
+                    spacing:        20
+
+                    QGCLabel { text: qsTr("Channel Monitor") }
+
+                    Row {
+                        spacing:    15
+                        Repeater {
+                            id:     channelValueMonitor
+                            model:  _joystickMessageSender.channelCount
+
+                            QGCLabel {
+                                text: qsTr("C%1: %2/%3").arg(modelData+5).arg(_joystickMessageSender.channelSeqs[modelData])
+                                                        .arg(joystickManager.keyConfiguration.channelValueCounts[modelData])
+                            }
+                        } // Repeater
+                    }
+                } // Channel monitor
+
+                QGCButton {
+                    id:        keySettings
+                    text:      qsTr("Key settings")
+                    onClicked: {
+                        keySettingLoader.source = "QGroundControl/Controls/KeyConfiguration.qml"
+                        keySettingRow.visible = true;
+                        leftColumn.visible = false;
+                        rightColumn.visible = false;
+                    }
+                }
+
                 // Button monitor
                 Column {
+                    visible:    false
                     width:      parent.width
                     spacing:    ScreenTools.defaultFontPixelHeight
 
@@ -817,15 +867,6 @@ SetupPage {
                                 buttonMonitorRepeater.itemAt(index).pressed = pressed
                             }
                         }
-                    }
-
-                    QGCCheckBox {
-                        id:         volumeKeysSwitchMode
-                        enabled:    true
-                        text:       qsTr("Use volume keys to switch mode")
-                        checked:    _activeJoystick ? _activeJoystick.volumeKeysSwitchMode : false
-
-                        onClicked:  _activeJoystick.volumeKeysSwitchMode = checked
                     }
 
                     Flow {
@@ -850,7 +891,7 @@ SetupPage {
                                     color:                  pressed ? qgcPal.buttonHighlightText : qgcPal.buttonText
                                     horizontalAlignment:    Text.AlignHCenter
                                     verticalAlignment:      Text.AlignVCenter
-                                    text:                   _activeJoystick.volumeKeysSwitchMode ? _activeJoystick.modeButtonState : modelData
+                                    text:                   modelData
                                 }
                             }
                         } // Repeater
