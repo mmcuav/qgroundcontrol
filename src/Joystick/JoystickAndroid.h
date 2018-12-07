@@ -32,7 +32,7 @@ private:
     virtual bool _getButton(int i);
     virtual int _getAxis(int i);
     virtual uint8_t _getHat(int hat,int i);
-    void handleKeyEventInner(int keycode, int action);
+    bool handleKeyEventInner(int keycode, int action);
     int getKeyIndexByCode(int code);
     void sendChannelValue(int ch, int value);
     bool getChannelValue(int keyCode, KeyConfiguration::KeyAction_t action, int *ch, int *value);

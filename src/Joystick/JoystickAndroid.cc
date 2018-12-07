@@ -149,8 +149,7 @@ bool JoystickAndroid::handleKeyEvent(jobject event) {
     if (_deviceId!=deviceId) {
         const int ac = ev.callMethod<jint>("getAction", "()I");
         const int kc = ev.callMethod<jint>("getKeyCode", "()I");
-        handleKeyEventInner(kc, ac);
-        return true;
+        return handleKeyEventInner(kc, ac);
     }
  
     const int action = ev.callMethod<jint>("getAction", "()I");
@@ -208,15 +207,15 @@ uint8_t JoystickAndroid::_getHat(int hat,int i) {
     return 0;
 }
 
-void JoystickAndroid::handleKeyEventInner(int keycode, int action) {
+bool JoystickAndroid::handleKeyEventInner(int keycode, int action) {
     int keyIndex, ch;
     int value;
     quint64 current_time = QGC::groundTimeMilliseconds();
 
     keyIndex = getKeyIndexByCode(keycode);
     if(keyIndex < 0) {
-        qWarning() << "unsupport key "<< keycode;
-        return;
+        qDebug() << "unsupport key "<< keycode << ", don't proccess here";
+        return false;
     }
 
     if(action == ACTION_DOWN) {
@@ -248,6 +247,8 @@ void JoystickAndroid::handleKeyEventInner(int keycode, int action) {
         _keyEvents[keyIndex].isPressed = false;
         _keyEvents[keyIndex].isLongPress = false;
     }
+
+    return true;
 }
 
 int JoystickAndroid::getKeyIndexByCode(int code) {
