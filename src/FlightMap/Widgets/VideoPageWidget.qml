@@ -26,7 +26,7 @@ import QGroundControl.FactControls      1.0
 /// Video streaming page for Instrument Panel PageView
 Item {
     width:              pageWidth
-    height:             videoGrid.height + (ScreenTools.defaultFontPixelHeight * 2)
+    height:             videoGrid.height + ScreenTools.defaultFontPixelWidth
     anchors.margins:    ScreenTools.defaultFontPixelWidth * 2
     anchors.centerIn:   parent
 
@@ -45,6 +45,28 @@ Item {
         columnSpacing:      ScreenTools.defaultFontPixelWidth * 2
         rowSpacing:         ScreenTools.defaultFontPixelHeight
         anchors.centerIn:   parent
+
+        ExclusiveGroup { id:cameraIdGroup }
+        QGCRadioButton {
+            exclusiveGroup: cameraIdGroup
+            text:           "Video 1"
+            visible:        QGroundControl.videoManager.videoStreamControl.cameraCount > 1
+            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 0
+            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
+
+            onClicked:      QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 0
+        }
+
+        QGCRadioButton {
+            exclusiveGroup: cameraIdGroup
+            text:           "Video 2"
+            visible:        QGroundControl.videoManager.videoStreamControl.cameraCount > 1
+            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 1
+            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
+
+            onClicked:      QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 1
+        }
+
         Connections {
             // For some reason, the normal signal is not reflected in the control below
             target: QGroundControl.settingsManager.videoSettings.streamEnabled
@@ -55,7 +77,6 @@ Item {
         // Enable/Disable Video Streaming
         QGCLabel {
            text:            qsTr("Enable Stream")
-           font.pointSize:  ScreenTools.smallFontPointSize
         }
         QGCSwitch {
             id:             enableSwitch
@@ -71,29 +92,9 @@ Item {
                 }
             }
         }
-        // camera id
-        QGCLabel {
-           visible:        QGroundControl.videoManager.videoStreamControl.cameraCount > 1
-           text:            qsTr("Camera Switch")
-           font.pointSize:  ScreenTools.smallFontPointSize
-        }
-        QGCSwitch {
-            id:             cameraIdSwitch
-            visible:        QGroundControl.videoManager.videoStreamControl.cameraCount > 1
-            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
-            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 1
-            onCheckedChanged: {
-                if(checked) {
-                    QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 1
-                } else {
-                    QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 0
-                }
-            }
-        }
         // resolution
         QGCLabel {
            text:            qsTr("1080P video")
-           font.pointSize:  ScreenTools.smallFontPointSize
         }
         QGCSwitch {
             id:             fhdSwitch
@@ -108,7 +109,6 @@ Item {
         // Grid Lines
         QGCLabel {
            text:            qsTr("Grid Lines")
-           font.pointSize:  ScreenTools.smallFontPointSize
            visible:         QGroundControl.videoManager.isGStreamer && QGroundControl.settingsManager.videoSettings.gridLines.visible
         }
         QGCSwitch {
@@ -125,7 +125,6 @@ Item {
         }
         QGCLabel {
            text:            _recordingVideo ? qsTr("Stop Recording") : qsTr("Record Stream")
-           font.pointSize:  ScreenTools.smallFontPointSize
            visible:         QGroundControl.settingsManager.videoSettings.showRecControl.rawValue
         }
         // Button to start/stop video recording
@@ -176,7 +175,6 @@ Item {
         }
         QGCLabel {
             text:               qsTr("Video Streaming Not Configured")
-            font.pointSize:     ScreenTools.smallFontPointSize
             visible:            !_streamingEnabled
             Layout.columnSpan:  2
         }
