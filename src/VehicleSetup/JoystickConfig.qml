@@ -842,7 +842,7 @@ SetupPage {
 
                 QGCButton {
                     id:        keySettings
-                    text:      qsTr("Key settings")
+                    text:      qsTr("Extra channel settings")
                     onClicked: {
                         keySettingLoader.source = "QGroundControl/Controls/KeyConfiguration.qml"
                         keySettingRow.visible = true;

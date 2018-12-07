@@ -24,9 +24,10 @@ import QGroundControl.FactSystem        1.0
 import QGroundControl.FactControls      1.0
 
 /// Video streaming page for Instrument Panel PageView
-Item {
+Column {
     width:              pageWidth
-    height:             videoGrid.height + ScreenTools.defaultFontPixelWidth
+    height:             videoGrid.height + ScreenTools.defaultFontPixelWidth * 2 +
+                        (cameraIdRow.visible ? cameraIdRow.height : 0)
     anchors.margins:    ScreenTools.defaultFontPixelWidth * 2
     anchors.centerIn:   parent
 
@@ -39,33 +40,34 @@ Item {
 
     QGCPalette { id:qgcPal; colorGroupEnabled: true }
 
+    Row {
+        id:                       cameraIdRow
+        visible:                  QGroundControl.videoManager.videoStreamControl.cameraCount > 1
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing:                  ScreenTools.defaultFontPixelWidth
+        ExclusiveGroup { id:cameraIdGroup }
+        QGCRadioButton {
+            exclusiveGroup: cameraIdGroup
+            text:           "Stream 1"
+            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 0
+            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
+            onClicked:      QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 0
+        }
+        QGCRadioButton {
+            exclusiveGroup: cameraIdGroup
+            text:           "Stream 2"
+            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 1
+            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
+            onClicked:      QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 1
+        }
+    }
+    Item { width: 1; height: ScreenTools.defaultFontPixelHeight}
     GridLayout {
         id:                 videoGrid
         columns:            2
         columnSpacing:      ScreenTools.defaultFontPixelWidth * 2
         rowSpacing:         ScreenTools.defaultFontPixelHeight
-        anchors.centerIn:   parent
-
-        ExclusiveGroup { id:cameraIdGroup }
-        QGCRadioButton {
-            exclusiveGroup: cameraIdGroup
-            text:           "Video 1"
-            visible:        QGroundControl.videoManager.videoStreamControl.cameraCount > 1
-            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 0
-            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
-
-            onClicked:      QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 0
-        }
-
-        QGCRadioButton {
-            exclusiveGroup: cameraIdGroup
-            text:           "Video 2"
-            visible:        QGroundControl.videoManager.videoStreamControl.cameraCount > 1
-            checked:        QGroundControl.settingsManager.videoSettings.cameraId.rawValue === 1
-            enabled:        !QGroundControl.videoManager.videoStreamControl.settingInProgress
-
-            onClicked:      QGroundControl.settingsManager.videoSettings.cameraId.rawValue = 1
-        }
+        anchors.horizontalCenter: parent.horizontalCenter
 
         Connections {
             // For some reason, the normal signal is not reflected in the control below
