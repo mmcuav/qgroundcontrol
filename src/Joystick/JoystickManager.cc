@@ -78,8 +78,6 @@ void JoystickManager::_loadSettings(void)
     if(!_activeJoystick)
         return;
 
-    qCritical(JoystickManagerLog) << "djz--current joystick name:" << _activeJoystick->name();
-
     settings.beginGroup(_settingsGroup);
 
     bool convertOk;

@@ -156,6 +156,12 @@ void Joystick::_activeVehicleChanged(Vehicle* activeVehicle)
         int mode = settings.value(_txModeSettingsKey, activeVehicle->firmwarePlugin()->defaultJoystickTXMode()).toInt();
 
         setTXMode(mode);
+
+        //If joystick had completed calibration before Vehicle was find, we need to update vehicle'joystick state.
+        //Before that, Updating vehicle'joystick state by JoystickConfigController:_writeCalibration.
+        if (_joystickManager->joystickEnabled()) {
+            activeVehicle->setJoystickEnabled(true);
+        }
     }
 }
 
