@@ -51,11 +51,13 @@ public:
     Q_PROPERTY(bool pitchAxisMapped     READ pitchAxisMapped    NOTIFY pitchAxisMappedChanged)
     Q_PROPERTY(bool yawAxisMapped       READ yawAxisMapped      NOTIFY yawAxisMappedChanged)
     Q_PROPERTY(bool throttleAxisMapped  READ throttleAxisMapped NOTIFY throttleAxisMappedChanged)
+    Q_PROPERTY(bool wheelAxisMapped     READ wheelAxisMapped    NOTIFY wheelAxisMappedChanged)
 
     Q_PROPERTY(int rollAxisReversed     READ rollAxisReversed       NOTIFY rollAxisReversedChanged)
     Q_PROPERTY(int pitchAxisReversed    READ pitchAxisReversed      NOTIFY pitchAxisReversedChanged)
     Q_PROPERTY(int yawAxisReversed      READ yawAxisReversed        NOTIFY yawAxisReversedChanged)
     Q_PROPERTY(int throttleAxisReversed READ throttleAxisReversed   NOTIFY throttleAxisReversedChanged)
+    Q_PROPERTY(int wheelAxisReversed    READ wheelAxisReversed      NOTIFY wheelAxisReversedChanged)
     
     Q_PROPERTY(bool deadbandToggle            READ getDeadbandToggle        WRITE setDeadbandToggle    NOTIFY deadbandToggled)
 
@@ -72,11 +74,13 @@ public:
     bool pitchAxisMapped(void);
     bool yawAxisMapped(void);
     bool throttleAxisMapped(void);
+    bool wheelAxisMapped(void);
     
     bool rollAxisReversed(void);
     bool pitchAxisReversed(void);
     bool yawAxisReversed(void);
     bool throttleAxisReversed(void);
+    bool wheelAxisReversed(void);
     
     bool getDeadbandToggle(void);
     void setDeadbandToggle(bool);
@@ -96,11 +100,13 @@ signals:
     void pitchAxisMappedChanged(bool mapped);
     void yawAxisMappedChanged(bool mapped);
     void throttleAxisMappedChanged(bool mapped);
+    void wheelAxisMappedChanged(bool mapped);
 
     void rollAxisReversedChanged(bool reversed);
     void pitchAxisReversedChanged(bool reversed);
     void yawAxisReversedChanged(bool reversed);
     void throttleAxisReversedChanged(bool reversed);
+    void wheelAxisReversedChanged(bool reversed);
 
     void deadbandToggled(bool value);
     
@@ -206,6 +212,9 @@ private:
     static const char* _imageRollRight;
     static const char* _imagePitchUp;
     static const char* _imagePitchDown;
+    static const char* _imageWheelLeft;
+    static const char* _imageWheelRight;
+    static const char* _imageWheelCenter;
     
     static const int _updateInterval;   ///< Interval for ui update timer
     

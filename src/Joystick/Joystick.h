@@ -49,6 +49,7 @@ public:
         pitchFunction,
         yawFunction,
         throttleFunction,
+        wheelFunction,
         maxFunction
     } AxisFunction_t;
 
@@ -158,8 +159,9 @@ signals:
     ///     @param pitch    Range i -1:1, negative meaning pitch down, positive meaning pitch up
     ///     @param yaw      Range is -1:1, negative meaning yaw left, positive meaning yaw right
     ///     @param throttle Range is 0:1, 0 meaning no throttle, 1 meaning full throttle
+    ///     @param wheel    Range is 0:1, 0 meaning wheel left, 1 meaning wheel right
     ///     @param mode     See Vehicle::JoystickMode_t enum
-    void manualControl(float roll, float pitch, float yaw, float throttle, quint16 buttons, int joystickMmode);
+    void manualControl(float roll, float pitch, float yaw, float throttle, float wheel, quint16 buttons, int joystickMmode);
 
     void buttonActionTriggered(int action);
 

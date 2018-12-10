@@ -316,6 +316,38 @@ SetupPage {
                             onManualControl: throttleLoader.item.axisValue = _activeJoystick.negativeThrust ? -throttle*32768.0 : (-2*throttle+1)*32768.0
                         }
                     }
+
+                    QGCLabel { text: qsTr("Wheel Controls") }
+
+                    Item {
+                        width:  parent.width
+                        height: defaultTextHeight * 2
+
+                        QGCLabel {
+                            id:     wheelLabel
+                            width:  defaultTextWidth * 10
+                            text:   qsTr("Wheel")
+                        }
+
+                        Loader {
+                            id:                 wheelLoader
+                            anchors.left:       wheelLabel.right
+                            anchors.right:      parent.right
+                            height:             ScreenTools.defaultFontPixelHeight
+                            width:              100
+                            sourceComponent:    axisMonitorDisplayComponent
+
+                            property real defaultTextWidth: ScreenTools.defaultFontPixelWidth
+                            property bool mapped:           controller.wheelAxisMapped
+                            property bool reversed:         controller.wheelAxisReversed
+                        }
+
+                        Connections {
+                            target: _activeJoystick
+
+                            onManualControl: wheelLoader.item.axisValue = wheel*32768.0
+                        }
+                    }
                 } // Column - Attitude Control labels
 
                 // Command Buttons

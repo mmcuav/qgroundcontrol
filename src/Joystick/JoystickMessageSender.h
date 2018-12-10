@@ -38,7 +38,7 @@ signals:
     void channelSeqsChanged();
 
 private slots:
-    void _handleManualControl(float roll, float pitch, float yaw, float thrust, quint16 buttons, int joystickMode);
+    void _handleManualControl(float roll, float pitch, float yaw, float thrust, float wheel, quint16 buttons, int joystickMode);
     void _activeJoystickChanged(Joystick* joystick);
     void _setupJoystickLink();
 

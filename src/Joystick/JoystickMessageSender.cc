@@ -56,7 +56,7 @@ void JoystickMessageSender::_setupJoystickLink()
     mavlinkStatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
 }
 
-void JoystickMessageSender::_handleManualControl(float roll, float pitch, float yaw, float thrust, quint16 buttons, int joystickMode)
+void JoystickMessageSender::_handleManualControl(float roll, float pitch, float yaw, float thrust, float wheel, quint16 buttons, int joystickMode)
 {
     if (joystickMode != Vehicle::JoystickModeRC || _mavlinkChannel == 0) {
         return;
@@ -66,6 +66,7 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     static float manualPitchAngle = 0.0;
     static float manualYawAngle = 0.0;
     static float manualThrust = 0.0;
+    static float manualWheel = 0.0;
     static quint16 manualButtons = 0;
     static quint8 countSinceLastTransmission = 0; // Track how many calls to this function have occurred since the last MAVLink transmission
 
@@ -80,7 +81,7 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
         countSinceLastTransmission = 0;
     } else if ((!qIsNaN(roll) && roll != manualRollAngle) || (!qIsNaN(pitch) && pitch != manualPitchAngle) ||
              (!qIsNaN(yaw) && yaw != manualYawAngle) || (!qIsNaN(thrust) && thrust != manualThrust) ||
-             buttons != manualButtons) {
+             (!qIsNaN(wheel) && wheel != manualWheel) || buttons != manualButtons) {
         sendCommand = true;
 
         // Ensure that another message will be sent the next time this function is called
@@ -97,6 +98,7 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     manualPitchAngle = pitch;
     manualYawAngle = yaw;
     manualThrust = thrust;
+    manualThrust = wheel;
     manualButtons = buttons;
 
     // Store scaling values for all 3 axes
