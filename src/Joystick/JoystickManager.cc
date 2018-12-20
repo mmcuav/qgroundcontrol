@@ -34,7 +34,6 @@ JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     , _activeJoystick(NULL)
     , _multiVehicleManager(NULL)
     , _joystickMessageSender(NULL)
-    , _keyConfiguration(NULL)
     , _joystickMode(Vehicle::JoystickModeRC)
     , _joystickEnabled(false)
 {
@@ -50,6 +49,12 @@ JoystickManager::~JoystickManager() {
     if(_joystickMessageSender) {
         delete _joystickMessageSender;
     }
+    for(int i = 0; i < _keyConfigurationList.size(); i++) {
+        if(_keyConfigurationList[i]) {
+            delete _keyConfigurationList[i];
+        }
+    }
+    _keyConfigurationList.clear();
     qDebug() << "Done";
 }
 
@@ -147,9 +152,18 @@ void JoystickManager::setJoystickEnabled(bool enabled)
     emit joystickEnabledChanged(_joystickEnabled);
 }
 
-KeyConfiguration* JoystickManager::keyConfiguration()
+KeyConfiguration* JoystickManager::getKeyConfiguration(int index)
 {
-    return _keyConfiguration;
+    if(index < 0 || index > 1) {
+        qWarning() << "keyConfigurationList index error.";
+        return NULL;
+    }
+    return _keyConfigurationList[index];
+}
+
+QQmlListProperty<KeyConfiguration> JoystickManager::keyConfigurationList()
+{
+    return QQmlListProperty<KeyConfiguration>(this, _keyConfigurationList);
 }
 
 void JoystickManager::_startJoystick(bool start)
@@ -171,9 +185,11 @@ void JoystickManager::setToolbox(QGCToolbox *toolbox)
 
     _multiVehicleManager = _toolbox->multiVehicleManager();
     _joystickMessageSender = new JoystickMessageSender(this);
-    _keyConfiguration = new KeyConfiguration(this);
+    _keyConfigurationList << new KeyConfiguration(this, 5, 12, 1/* sbus */);
+    _keyConfigurationList << new KeyConfiguration(this, 1, 16, 2/* sbus */);
 
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+    qmlRegisterType<KeyConfiguration>();
 }
 
 void JoystickManager::init() {

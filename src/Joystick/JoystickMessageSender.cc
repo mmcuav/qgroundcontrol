@@ -16,6 +16,9 @@
 
 QGC_LOGGING_CATEGORY(JoystickMessageSenderLog, "JoystickMessageSenderLog")
 
+uint16_t JoystickMessageSender::_sbus0ChannelValues[12] = { 0 };
+uint16_t JoystickMessageSender::_sbus1ChannelValues[16] = { 0 };
+
 JoystickMessageSender::JoystickMessageSender(JoystickManager* joystickManager)
     : QObject()
     , _activeJoystick(NULL)
@@ -25,9 +28,8 @@ JoystickMessageSender::JoystickMessageSender(JoystickManager* joystickManager)
     , _joystickCompId(66)
     , _remoteHostIp("192.168.0.10")
     , _mavlinkChannel(0)
-    , _channelCount(5)
+    , _channelCount(16)
 {
-    memset(_channelValues, 0, sizeof(_channelValues));
     connect(joystickManager, &JoystickManager::activeJoystickChanged, this, &JoystickMessageSender::_activeJoystickChanged);
 }
 
@@ -101,6 +103,12 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     manualThrust = wheel;
     manualButtons = buttons;
 
+    int sbus, channel, channelValue;
+    if(KeyConfiguration::getScrollWheelSetting(&sbus, &channel)) {
+        channelValue = (int)(1000 + wheel * 1000.f);
+        setChannelValue(sbus, channel, channelValue);
+    }
+
     // Store scaling values for all 3 axes
     const float axesScaling = 1.0 * 1000.0;
 
@@ -115,15 +123,33 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     mavlink_msg_rc_channels_pack_chan(mavlink->getSystemId(), _joystickCompId,
                                  _mavlinkChannel,
                                  &message,
-                                 0, 5,
+                                 0, 0,
                                  ch1, ch2, ch3, ch4,
-                                 _channelValues[0], _channelValues[1],
-                                 _channelValues[2], _channelValues[3],
-                                 _channelValues[4], 0, 0, 0,
-                                 0, 0, 0, 0,
+                                 _sbus0ChannelValues[0], _sbus0ChannelValues[1],
+                                 _sbus0ChannelValues[2], _sbus0ChannelValues[3],
+                                 _sbus0ChannelValues[4], _sbus0ChannelValues[5],
+                                 _sbus0ChannelValues[6], _sbus0ChannelValues[7],
+                                 _sbus0ChannelValues[8], _sbus0ChannelValues[9],
+                                 _sbus0ChannelValues[10], _sbus0ChannelValues[11],
+                                 0, 0, 255);
+    int len = mavlink_msg_to_send_buffer(buffer, &message);
+    _udpLink->writeBytesSafe((const char*)buffer, len);
+
+    mavlink_msg_rc_channels_pack_chan(mavlink->getSystemId(), _joystickCompId,
+                                 _mavlinkChannel,
+                                 &message,
+                                 0, 1,
+                                 _sbus1ChannelValues[0], _sbus1ChannelValues[1],
+                                 _sbus1ChannelValues[2], _sbus1ChannelValues[3],
+                                 _sbus1ChannelValues[4], _sbus1ChannelValues[5],
+                                 _sbus1ChannelValues[6], _sbus1ChannelValues[7],
+                                 _sbus1ChannelValues[8], _sbus1ChannelValues[9],
+                                 _sbus1ChannelValues[10], _sbus1ChannelValues[11],
+                                 _sbus1ChannelValues[12], _sbus1ChannelValues[13],
+                                 _sbus1ChannelValues[14], _sbus1ChannelValues[15],
                                  0, 0, 255);
 
-    int len = mavlink_msg_to_send_buffer(buffer, &message);
+    len = mavlink_msg_to_send_buffer(buffer, &message);
     _udpLink->writeBytesSafe((const char*)buffer, len);
 }
 
@@ -145,34 +171,51 @@ void JoystickMessageSender::_activeJoystickChanged(Joystick* joystick)
     }
 }
 
-QVariantList JoystickMessageSender::channelSeqs()
+QVariantList JoystickMessageSender::sbusChannelStatus()
 {
-    KeyConfiguration* conf = _joystickManager->keyConfiguration();
+    KeyConfiguration* conf;
     QVariantList list;
 
-    for (int i=0; i<_channelCount; i++) {
-        if (conf == NULL) {
-            list += QVariant::fromValue(0);
-        } else {
-            list += QVariant::fromValue(conf->getSeqInChannel(i+5, _channelValues[i]));
+    for(int i = 0; i < 2; i++) {
+        QString status;
+        conf = _joystickManager->getKeyConfiguration(i);
+        for(int j = 0; j < conf->channelCount(); j++) {
+            if(conf->getControlMode(j + conf->getChannelMinNum()) > 1) {
+                status += QString("C%1: %2/%3 ").arg(j + conf->getChannelMinNum(), 2, 10, QChar('0'))
+                                                .arg(conf->getSeqInChannel(j + conf->getChannelMinNum(), i == 0 ? _sbus0ChannelValues[j] : _sbus1ChannelValues[j]))
+                                                .arg(conf->getChannelValueCount(j + conf->getChannelMinNum()));
+            } else if(conf->getControlMode(j + conf->getChannelMinNum()) == 1) {//scroll wheel
+                status += QString("C%1: ").arg(j + conf->getChannelMinNum(), 2, 10, QChar('0')) + "SW ";
+            }
         }
+        list += QVariant::fromValue(status);
     }
     return list;
 }
 
-int JoystickMessageSender::getChannelValue(int ch)
+int JoystickMessageSender::getChannelValue(int sbus, int ch)
 {
-    return _channelValues[ch];
+    if(sbus == 1) {
+        return _sbus0ChannelValues[ch - 5];
+    } else if(sbus == 2) {
+        return _sbus1ChannelValues[ch - 1];
+    }
+
+    return 0;
 }
 
-void JoystickMessageSender::setChannelValue(int ch, uint16_t value)
+void JoystickMessageSender::setChannelValue(int sbus, int ch, uint16_t value)
 {
-    if (ch >= _channelCount) {
+    if (ch > _channelCount) {
         qWarning() << "invalid channel id" << ch;
         return;
     }
-    _channelValues[ch] = value;
-    emit channelSeqsChanged();
+    if(sbus == 1) {
+        _sbus0ChannelValues[ch - 5] = value;
+    } else if(sbus == 2) {
+        _sbus1ChannelValues[ch - 1] = value;
+    }
+    emit sbusChannelStatusChanged();
 }
 
 int JoystickMessageSender::channelCount()

@@ -27,57 +27,102 @@ public:
 
     typedef struct
     {
+        int sbus;
         int channel;
         int value;
-        int controlMode;
+        int switchType;
         int defaultValue;
     } KeySetting_t;
 
-    KeyConfiguration(JoystickManager* joystickManager);
+    typedef struct
+    {
+        int sbus;
+        int channel;
+    } ScrollWheelSetting_t;
+
+    KeyConfiguration(JoystickManager* joystickManager, int channelMinNum, int channelCount, int sbus);
     ~KeyConfiguration();
 
+    Q_PROPERTY(int channelCount READ channelCount CONSTANT)
+    Q_PROPERTY(bool sbusEnable READ sbusEnable WRITE setSbusEnable NOTIFY sbusEnableChanged)
     Q_PROPERTY(QVariantList channelValueCounts READ channelValueCounts NOTIFY channelValueCountsChanged)
+    Q_PROPERTY(QVariantList channelKeyCounts READ channelKeyCounts NOTIFY channelKeyCountsChanged)
+    Q_PROPERTY(QVariantList keySettingStrings READ keySettingStrings NOTIFY keySettingStringsChanged)
+    Q_PROPERTY(QStringList availableKeys READ availableKeys CONSTANT)
+    Q_PROPERTY(QStringList availableControlModes READ availableControlModes CONSTANT)
 
     Q_INVOKABLE QString  getKeyStringFromIndex(int index);
     Q_INVOKABLE QString  getKeyNameFromIndex(int index);
     Q_INVOKABLE void saveKeySetting(int keyIndex, int channel, int value);
     Q_INVOKABLE void saveSingleKeySetting(int keyIndex,
-                                          int controlMode,
+                                          int switchType,
                                           int channel,
                                           int value,
                                           int defaultValue);
-    Q_INVOKABLE int keyIsInUse(int keyIndex, int controlMode);
-    Q_INVOKABLE int getKeyCount(int channel);
+    Q_INVOKABLE void saveScollWheelSetting(int channel);
+    Q_INVOKABLE int sbusOnKey(int keyIndex, int switchType);
+    Q_INVOKABLE int channelOnKey(int keyIndex, int switchType);
+    Q_INVOKABLE int getControlMode(int channel);
+    Q_INVOKABLE int getControlModeByKeyCount(int keyCount);
     Q_INVOKABLE QString getKeySettingString(int channel);
-    Q_INVOKABLE void resetKeySetting(int channel);
+    Q_INVOKABLE void resetKeySetting(int sbus, int channel);
+    Q_INVOKABLE void resetScrollWheelSetting();
     Q_INVOKABLE int getKeyIndex(int channel, int seq, int count);
     Q_INVOKABLE int getValue(int channel, int seq, int count);
     Q_INVOKABLE int getDefaultValue(int channel);
-    Q_INVOKABLE int getControlMode(int channel);
-    Q_INVOKABLE void setChannelDefaultValue(int channel);
+    Q_INVOKABLE int getSwitchType(int channel);
+    Q_INVOKABLE int getChannelMinNum();
+    Q_INVOKABLE void setChannelDefaultValue(int sbus, int channel);
+    Q_INVOKABLE int ppmToSbus(int ppm);
+    Q_INVOKABLE int sbusToPPM(int sbus);
 
     int getSeqInChannel(int channel, int value);
     int getChannelValueCount(int channel);
 
-    bool getChannelValue(int keyCode, KeyAction_t action, int* channel, int* value);
+    static bool getChannelValue(int keyCode, KeyAction_t action, int* sbus, int* channel, int* value);
+    static bool getScrollWheelSetting(int *sbus, int *channle);
+    int channelCount();
+    bool sbusEnable();
+    void setSbusEnable(bool sbusEnable);
     QVariantList channelValueCounts();
+    QVariantList channelKeyCounts();
+    QVariantList keySettingStrings();
+    QStringList availableKeys();
+    QStringList availableControlModes();
+
+    static QString sControlModes[];
+    static QString sKeyStrings[];
+    static QString sKeyNames[];
 
 signals:
     void channelValueCountsChanged();
+    void channelKeyCountsChanged();
+    void keySettingStringsChanged();
+    void sbusEnableChanged();
 
 private:
-    int _currentChannelValue(int channel);
-    int _getKeyIndexFromKeyCode(int keyCode, int action);
+    static int currentChannelValue(int sbus, int channel);
+    static int getKeyIndexFromKeyCode(int keyCode, int action);
     void _loadSettingToCache();
     void _setChannelDefaultValues();
+    void _saveKeyConfiguration(int keyIndex);
+    void _saveScrollWheelConfiguration();
 
+    static int _deviceKeyCount;
+    static KeySetting_t* _keySettingCache;
+    static ScrollWheelSetting_t _scrollWheelSetting;
+    static QStringList _keyNameList;
+    int _channelMinNum;
+    int _channelCount;
+    int _sbus;
+    int _maxKeyNumPerChannel;
     int _channelDefaultMinValue;
     int _channelDefaultMaxValue;
-    int _deviceKeyCount;
+    bool _sbusEnable;
+    int _scrollWheelDefaultValue;
     QStringList chBtnListQStr;
     JoystickManager* _joystickManager;
     QString _keySettingGroup;
-    KeySetting_t* _keySettingCache;
-    QStringList _keyNameList;
     QStringList _keyStringList;
+    QStringList _controlModeList;
 };

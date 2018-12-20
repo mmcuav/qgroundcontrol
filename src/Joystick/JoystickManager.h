@@ -19,6 +19,7 @@
 #include "KeyConfiguration.h"
 
 #include <QVariantList>
+#include <QQmlListProperty>
 
 Q_DECLARE_LOGGING_CATEGORY(JoystickManagerLog)
 
@@ -47,7 +48,7 @@ public:
     Q_PROPERTY(bool                 supportsJSButton        READ supportsJSButton                                       CONSTANT)
     Q_PROPERTY(int manualControlReservedButtonCount READ manualControlReservedButtonCount CONSTANT)
 
-    Q_PROPERTY(KeyConfiguration* keyConfiguration READ keyConfiguration CONSTANT)
+    Q_PROPERTY(QQmlListProperty<KeyConfiguration> keyConfigurationList READ keyConfigurationList CONSTANT)
     Q_PROPERTY(JoystickMessageSender* joystickMessageSender READ joystickMessageSender CONSTANT)
 
     bool supportsThrottleModeCenterZero(void);
@@ -76,7 +77,8 @@ public:
     bool joystickEnabled(void);
     void setJoystickEnabled(bool enabled);
 
-    KeyConfiguration* keyConfiguration();
+    QQmlListProperty<KeyConfiguration> keyConfigurationList();
+    KeyConfiguration* getKeyConfiguration(int index);
     JoystickMessageSender* joystickMessageSender(void) { return _joystickMessageSender; }
 
 public slots:
@@ -104,7 +106,7 @@ private:
     QMap<QString, Joystick*>    _name2JoystickMap;
     MultiVehicleManager*        _multiVehicleManager;
     JoystickMessageSender*      _joystickMessageSender;
-    KeyConfiguration*        _keyConfiguration;
+    QList<KeyConfiguration *> _keyConfigurationList;
     
     static const char * _settingsGroup;
     static const char * _settingsKeyActiveJoystick;

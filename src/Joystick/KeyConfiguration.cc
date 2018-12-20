@@ -10,19 +10,57 @@
 #include "JoystickManager.h"
 #include "KeyConfiguration.h"
 
-KeyConfiguration::KeyConfiguration(JoystickManager* joystickManager)
+#define SCALE_OFFSET 874
+#define SCALE_FACTOR 0.625
+QString KeyConfiguration::sControlModes[] = {
+    "Undefine",
+    "Scroll Wheel",
+    "1 Button",
+    "2 Buttons",
+    "3 Buttons",
+    "4 Buttons",
+    "5 Buttons",
+    "6 buttons"
+};
+QString KeyConfiguration::sKeyStrings[] = {
+    "Undefine",
+    "1 Button",
+    "2 Buttons",
+    "3 Buttons",
+    "4 Buttons",
+    "5 Buttons",
+    "6 buttons"
+};
+QString KeyConfiguration::sKeyNames[] = { "A", "B", "C", "D", "CAM" };
+
+int KeyConfiguration::_deviceKeyCount = 5;;
+KeyConfiguration::KeySetting_t* KeyConfiguration::_keySettingCache;
+KeyConfiguration::ScrollWheelSetting_t KeyConfiguration::_scrollWheelSetting = { 0, 0 };
+QStringList KeyConfiguration::_keyNameList;
+
+KeyConfiguration::KeyConfiguration(JoystickManager* joystickManager, int channelMinNum, int channelCount, int sbus)
     : QObject()
-    , _channelDefaultMinValue(400)
-    , _channelDefaultMaxValue(1600)
-    , _deviceKeyCount(4)
+    , _channelMinNum(channelMinNum)
+    , _channelCount(channelCount)
+    , _sbus(sbus)
+    , _maxKeyNumPerChannel(6)
+    , _channelDefaultMinValue(361)
+    , _channelDefaultMaxValue(1641)
+    , _sbusEnable(false)
+    , _scrollWheelDefaultValue(1000)
     , _joystickManager(joystickManager)
     , _keySettingGroup("KEYSETTING")
 {
     _keySettingCache = new KeySetting_t[_deviceKeyCount*2];
     memset(_keySettingCache, 0, sizeof(KeySetting_t) * _deviceKeyCount * 2);
-    _keyNameList << "A" << "B" << "C" << "D";
-    _keyStringList << "A short" << "A long" << "B short" << "B long" << "C short" << "C long"
-                   << "D short" << "D long";
+    for(int i = 0; i < _deviceKeyCount; i++) {
+        _keyNameList << sKeyNames[i];
+        _keyStringList << _keyNameList[i] + " short press";
+        _keyStringList << _keyNameList[i] + " long press";
+    }
+    for(int i = 0; i < _maxKeyNumPerChannel + 2; i++) {
+        _controlModeList << sControlModes[i];
+    }
     _loadSettingToCache();
     _setChannelDefaultValues();
 }
@@ -37,23 +75,21 @@ void KeyConfiguration::_loadSettingToCache()
     QSettings settings;
     settings.beginGroup(_keySettingGroup);
     QStringList keys = settings.childKeys();
-    for (int i = 0; i < keys.count(); ++i)
+
+    for (int keyIndex = 0; keyIndex < _keyStringList.size(); ++keyIndex)
     {
-        int v = settings.value(keys.at(i)).toInt();
-        int keyIndex = (QString(keys.at(i))).toInt();
-        if(((v >> 28) & 0xF) > 0)
-        {
-            _keySettingCache[keyIndex].channel = (v >> 28) & 0xF;
-            _keySettingCache[keyIndex].controlMode = (v >> 24) & 0xF;
-            _keySettingCache[keyIndex].defaultValue = (v >> 12) & 0xFFF;
-            _keySettingCache[keyIndex].value = v & 0xFFF;
-        } else if ((v >> 16 && 0xFFFF) > 0) {
-            _keySettingCache[keyIndex].channel = (v >> 16) & 0xFFFF;
-            _keySettingCache[keyIndex].controlMode = 0;
-            _keySettingCache[keyIndex].value = v & 0xFFFF;
-            _keySettingCache[keyIndex].defaultValue = 0;
-        }
+        settings.beginGroup(_keyStringList[keyIndex]);
+        _keySettingCache[keyIndex].sbus = settings.value("sbus").toInt();
+        _keySettingCache[keyIndex].channel = settings.value("channel").toInt();
+        _keySettingCache[keyIndex].value = settings.value("value").toInt();
+        _keySettingCache[keyIndex].switchType = settings.value("switchType").toInt();
+        _keySettingCache[keyIndex].defaultValue = settings.value("defaultValue").toInt();
+        settings.endGroup();
     }
+    settings.beginGroup("scrollwheel");
+    _scrollWheelSetting.sbus = settings.value("sbus").toInt();
+    _scrollWheelSetting.channel = settings.value("channel").toInt();
+    settings.endGroup();
     settings.endGroup();
 }
 
@@ -69,12 +105,14 @@ void KeyConfiguration::_setChannelDefaultValues()
     {
         channel = _keySettingCache[i].channel;
         if( channel!= 0) {
-            if (_keySettingCache[i].controlMode > 0) {
-                _joystickManager->joystickMessageSender()->setChannelValue(channel - 5, _keySettingCache[i].defaultValue);
-            } else {
-                if((map.contains(channel) && map[channel] > _keySettingCache[i].value) ||
-                   !map.contains(channel)) {
-                    map[channel] = _keySettingCache[i].value;
+            if(_keySettingCache[i].sbus == _sbus) {
+                if (_keySettingCache[i].switchType > 0) {
+                    _joystickManager->joystickMessageSender()->setChannelValue(_sbus, channel, _keySettingCache[i].defaultValue);
+                } else {
+                    if((map.contains(channel) && map[channel] > _keySettingCache[i].value) ||
+                       !map.contains(channel)) {
+                        map[channel] = _keySettingCache[i].value;
+                    }
                 }
             }
         }
@@ -82,28 +120,33 @@ void KeyConfiguration::_setChannelDefaultValues()
     if (map.size() > 0) {
         QMap<int, int>::iterator it;
         for (it = map.begin(); it != map.end(); ++it) {
-            _joystickManager->joystickMessageSender()->setChannelValue(it.key()-5, it.value());
+            _joystickManager->joystickMessageSender()->setChannelValue(_sbus, it.key(), it.value());
         }
+    }
+    if(_scrollWheelSetting.sbus > 0 && _scrollWheelSetting.channel > 0) {
+        _joystickManager->joystickMessageSender()->setChannelValue(_scrollWheelSetting.sbus, _scrollWheelSetting.channel, _scrollWheelDefaultValue);
     }
 }
 
-void KeyConfiguration::setChannelDefaultValue(int channel)
+void KeyConfiguration::setChannelDefaultValue(int sbus, int channel)
 {
     int v = 0;
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
         if (channel == _keySettingCache[i].channel) {
-            if (_keySettingCache[i].controlMode > 0) {
-                _joystickManager->joystickMessageSender()->setChannelValue(channel-5, _keySettingCache[i].defaultValue);
-                return;
-            } else {
-                if(v > _keySettingCache[i].value || v == 0) {
-                    v = _keySettingCache[i].value;
+            if(_keySettingCache[i].sbus == sbus) {
+                if (_keySettingCache[i].switchType > 0) {
+                    _joystickManager->joystickMessageSender()->setChannelValue(sbus, channel, _keySettingCache[i].defaultValue);
+                    return;
+                } else {
+                    if(v > _keySettingCache[i].value || v == 0) {
+                        v = _keySettingCache[i].value;
+                    }
                 }
             }
         }
     }
-    _joystickManager->joystickMessageSender()->setChannelValue(channel-5, v);
+    _joystickManager->joystickMessageSender()->setChannelValue(sbus, channel, v);
     emit channelValueCountsChanged();
 }
 
@@ -112,8 +155,8 @@ int KeyConfiguration::getSeqInChannel(int channel, int value)
     QMap<int, int> map;
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
-        if(channel == _keySettingCache[i].channel) {
-            if (_keySettingCache[i].controlMode > 0) {
+        if(channel == _keySettingCache[i].channel && _sbus == _keySettingCache[i].sbus) {
+            if (_keySettingCache[i].switchType > 0) {
                 if (value == _keySettingCache[i].defaultValue) {
                     return value >  _keySettingCache[i].value ? 2 : 1;
                 } else if (value == _keySettingCache[i].value) {
@@ -142,8 +185,8 @@ int KeyConfiguration::getChannelValueCount(int channel)
     QMap<int, int> map;
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
-        if(channel == _keySettingCache[i].channel) {
-            if (_keySettingCache[i].controlMode > 0) {
+        if(_sbus == _keySettingCache[i].sbus && channel == _keySettingCache[i].channel) {
+            if (_keySettingCache[i].switchType > 0) {
                 return 2;
             } else {
                 map[_keySettingCache[i].value] = i;
@@ -157,24 +200,25 @@ QVariantList KeyConfiguration::channelValueCounts()
 {
     QVariantList list;
 
-    for (int i=5; i<10; i++) {
+    for (int i = _channelMinNum; i < _channelCount + _channelMinNum; i++) {
         list += QVariant::fromValue(getChannelValueCount(i));
     }
     return list;
 }
 
-bool KeyConfiguration::getChannelValue(int keyCode, KeyAction_t action, int* channel, int* value)
+bool KeyConfiguration::getChannelValue(int keyCode, KeyAction_t action, int* sbus, int* channel, int* value)
 {
-    int index = _getKeyIndexFromKeyCode(keyCode, action);
+    int index = getKeyIndexFromKeyCode(keyCode, action);
     if (index < 0 || index >= 2 * _deviceKeyCount) {
         return false;
     }
-    if (_keySettingCache[index].controlMode != 2 &&
+    if (_keySettingCache[index].switchType != 2 &&
         (action == keyAction_down || action == keyAction_up)) {
         return false;
     }
     *channel = _keySettingCache[index].channel;
-    if (_keySettingCache[index].controlMode == 2) {
+    *sbus = _keySettingCache[index].sbus;
+    if (_keySettingCache[index].switchType == 2) {
         if (action == keyAction_down) {
             *value = _keySettingCache[index].value;
         } else if (action == keyAction_up) {
@@ -182,8 +226,8 @@ bool KeyConfiguration::getChannelValue(int keyCode, KeyAction_t action, int* cha
         } else {
             return false;
         }
-    } else if (_keySettingCache[index].controlMode == 1) {
-        if (_currentChannelValue(_keySettingCache[index].channel) == _keySettingCache[index].value) {
+    } else if (_keySettingCache[index].switchType == 1) {
+        if (currentChannelValue(_keySettingCache[index].sbus, _keySettingCache[index].channel) == _keySettingCache[index].value) {
             *value = _keySettingCache[index].defaultValue;
         } else {
             *value = _keySettingCache[index].value;
@@ -194,12 +238,20 @@ bool KeyConfiguration::getChannelValue(int keyCode, KeyAction_t action, int* cha
     return (*channel != 0);
 }
 
-int KeyConfiguration::_currentChannelValue(int channel)
+bool KeyConfiguration::getScrollWheelSetting(int *sbus, int *channel)
 {
-    return _joystickManager->joystickMessageSender()->getChannelValue(channel - 5);
+    *sbus = _scrollWheelSetting.sbus;
+    *channel = _scrollWheelSetting.channel;
+
+    return (*sbus != 0);
 }
 
-int KeyConfiguration::_getKeyIndexFromKeyCode(int keyCode, int action)
+int KeyConfiguration::currentChannelValue(int sbus, int channel)
+{
+    return JoystickMessageSender::getChannelValue(sbus, channel);
+}
+
+int KeyConfiguration::getKeyIndexFromKeyCode(int keyCode, int action)
 {
     int index = -1;
     // to check hold mode setting, just use the setting for short
@@ -222,78 +274,199 @@ int KeyConfiguration::_getKeyIndexFromKeyCode(int keyCode, int action)
     {
         index = _keyNameList.indexOf("D") * 2 + action;
     }
+    else if(keyCode == 27) // KEYCODE_CAMERA
+    {
+        index = _keyNameList.indexOf("CAM") * 2 + action;
+    }
     return index;
 }
 
-// 31-16 bits: channel id; 15-0 bits: value
 void KeyConfiguration::saveKeySetting(int keyIndex, int channel, int value)
 {
+    _keySettingCache[keyIndex].sbus = _sbus;
     _keySettingCache[keyIndex].channel = channel;
     _keySettingCache[keyIndex].value = value;
-    _keySettingCache[keyIndex].controlMode = 0;
+    _keySettingCache[keyIndex].switchType = 0;
     _keySettingCache[keyIndex].defaultValue = 0;
 
-    QSettings settings;
-    settings.beginGroup(_keySettingGroup);
-    settings.setValue(QString::number(keyIndex), (channel << 16) | (value & 0xFFFF));
-    settings.endGroup();
+    _saveKeyConfiguration(keyIndex);
+
+    emit channelKeyCountsChanged();
+    emit keySettingStringsChanged();
 }
 
 void KeyConfiguration::saveSingleKeySetting(int keyIndex,
-                                            int controlMode,
+                                            int switchType,
                                             int channel,
                                             int value,
                                             int defaultValue)
 {
-    if ((controlMode > 15) || (channel > 15) || (value > 4095) || (defaultValue > 4095)) {
+    if ((switchType > 15) || (channel > _channelMinNum + _channelCount) || (value > 4095) || (defaultValue > 4095)) {
         qWarning("input contains invalid value");
         return;
     }
+    _keySettingCache[keyIndex].sbus = _sbus;
     _keySettingCache[keyIndex].channel = channel;
     _keySettingCache[keyIndex].value = value;
-    _keySettingCache[keyIndex].controlMode = controlMode;
+    _keySettingCache[keyIndex].switchType = switchType;
     _keySettingCache[keyIndex].defaultValue = defaultValue;
 
-    QSettings settings;
-    settings.beginGroup(_keySettingGroup);
-
-    // 31-28 bits: channel id; 27-24 bits: control mode; 23-12 bits: default value; 11-0 bits: value
-    settings.setValue(QString::number(keyIndex), (channel << 28) | (controlMode << 24) | (defaultValue << 12) | value);
-
-    if(controlMode == 2) { //hold mode will use both short and long press of the key
+    _saveKeyConfiguration(keyIndex);
+    if(switchType == 2) { //hold mode will use both short and long press of the key
         int otherKeyIndex = (keyIndex % 2 == 0) ? (keyIndex + 1) : (keyIndex - 1);
         memcpy(&_keySettingCache[otherKeyIndex], &_keySettingCache[keyIndex], sizeof(KeySetting_t));
 
-        settings.setValue(QString::number(otherKeyIndex), (channel << 28) | (controlMode << 24) | (defaultValue << 12) | value);
+        _saveKeyConfiguration(otherKeyIndex);
     }
-    settings.endGroup();
     qDebug() << "single key setting is stored";
+    emit channelKeyCountsChanged();
+    emit keySettingStringsChanged();
 }
 
-int KeyConfiguration::keyIsInUse(int keyIndex, int controlMode)
+void KeyConfiguration::saveScollWheelSetting(int channel)
+{
+    _scrollWheelSetting.sbus = _sbus;
+    _scrollWheelSetting.channel = channel;
+
+    _saveScrollWheelConfiguration();
+    _joystickManager->joystickMessageSender()->setChannelValue(_scrollWheelSetting.sbus, _scrollWheelSetting.channel, _scrollWheelDefaultValue);
+
+    emit channelKeyCountsChanged();
+    emit keySettingStringsChanged();
+}
+
+void KeyConfiguration::_saveKeyConfiguration(int keyIndex)
+{
+    QSettings settings;
+
+    settings.beginGroup(_keySettingGroup);
+    settings.beginGroup(_keyStringList[keyIndex]);
+    settings.setValue("sbus", _keySettingCache[keyIndex].sbus);
+    settings.setValue("channel", _keySettingCache[keyIndex].channel);
+    settings.setValue("value", _keySettingCache[keyIndex].value);
+    settings.setValue("switchType", _keySettingCache[keyIndex].switchType);
+    settings.setValue("defaultValue", _keySettingCache[keyIndex].defaultValue);
+    settings.endGroup();
+    settings.endGroup();
+}
+
+void KeyConfiguration::_saveScrollWheelConfiguration()
+{
+    QSettings settings;
+
+    settings.beginGroup(_keySettingGroup);
+    settings.beginGroup("scrollwheel");
+    settings.setValue("sbus", _scrollWheelSetting.sbus);
+    settings.setValue("channel", _scrollWheelSetting.channel);
+    settings.endGroup();
+    settings.endGroup();
+}
+
+int KeyConfiguration::ppmToSbus(int ppm) {
+    int sbus;
+
+    if(ppm < 800 || ppm > 2200) {
+        qWarning() << "ppm value out of range";
+        return -1;
+    }
+    if(ppm >= 800 && ppm <= 874) {
+        sbus = 0;
+    } else if(ppm >= 875 && ppm <= 2152) {
+        sbus = ceil((ppm - SCALE_OFFSET - 0.5f) / SCALE_FACTOR);
+    } else if(ppm >= 2153 && ppm <= 2200) {
+        sbus = 2047;
+    }
+
+    return sbus;
+}
+
+int KeyConfiguration::sbusToPPM(int sbus) {
+    int ppm;
+
+    if(sbus < 0 || sbus > 2047) {
+        qWarning() << "sbus value out of range";
+        return -1;
+    }
+    if(sbus == 0) {
+        ppm = 800;
+    } else if(sbus == 2047) {
+        ppm = 2200;
+    } else {
+        ppm = sbus * SCALE_FACTOR + SCALE_OFFSET + 0.5f;
+    }
+
+    return ppm;
+}
+
+int KeyConfiguration::channelOnKey(int keyIndex, int switchType)
 {
     int ch = _keySettingCache[keyIndex].channel;
-    if (controlMode == 2 && ch == 0) {
+    if (switchType == 2 && ch == 0) {
         int otherKeyIndex = (keyIndex % 2 == 0) ? (keyIndex + 1) : (keyIndex - 1);
         ch = _keySettingCache[otherKeyIndex].channel;
     }
     return ch;
 }
 
-int KeyConfiguration::getKeyCount(int channel)
+int KeyConfiguration::sbusOnKey(int keyIndex, int switchType)
+{
+    int sbus = _keySettingCache[keyIndex].sbus;
+    if (switchType == 2 && sbus == 0) {
+        int otherKeyIndex = (keyIndex % 2 == 0) ? (keyIndex + 1) : (keyIndex - 1);
+        sbus = _keySettingCache[otherKeyIndex].sbus;
+    }
+    return sbus;
+}
+
+int KeyConfiguration::channelCount()
+{
+    return _channelCount;
+}
+
+int KeyConfiguration::getControlMode(int channel)
 {
     int count = 0;
+    QString conMode;
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
-        if(_keySettingCache[i].channel == channel) {
-            if (_keySettingCache[i].controlMode != 0) {
+        if(_keySettingCache[i].channel == channel && _keySettingCache[i].sbus == _sbus) {
+            if (_keySettingCache[i].switchType != 0) {
                 count = 1;
                 break;
             }
             count++;
         }
     }
-    return count;
+    conMode = sKeyStrings[count];
+    if(_scrollWheelSetting.sbus == _sbus && _scrollWheelSetting.channel == channel) {
+        conMode = "Scroll Wheel";
+    }
+    return _controlModeList.indexOf(conMode);
+}
+
+int KeyConfiguration::getControlModeByKeyCount(int keyCount)
+{
+    return _controlModeList.indexOf(sKeyStrings[keyCount]);
+}
+
+QVariantList KeyConfiguration::channelKeyCounts()
+{
+    QVariantList list;
+
+    for(int i = _channelMinNum; i < _channelCount + _channelMinNum; i++) {
+        list += QVariant::fromValue(getControlMode(i));
+    }
+    return list;
+}
+
+QVariantList KeyConfiguration::keySettingStrings()
+{
+    QVariantList list;
+
+    for(int i = _channelMinNum; i < _channelCount + _channelMinNum; i++) {
+        list += QVariant::fromValue(getKeySettingString(i));
+    }
+    return list;
 }
 
 QString KeyConfiguration::getKeySettingString(int channel)
@@ -302,15 +475,17 @@ QString KeyConfiguration::getKeySettingString(int channel)
     QMap<int, int> map;
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
-        if(_keySettingCache[i].channel == channel) {
-            if (_keySettingCache[i].controlMode == 2) {
-                keyString = getKeyNameFromIndex(i) + ", " + "Reset after key release";
-                return keyString;
-            } else if (_keySettingCache[i].controlMode == 1) {
-                keyString = getKeyStringFromIndex(i) + ", " + "Keep after key release";
-                return keyString;
-            } else {
-                map[_keySettingCache[i].value] = i;
+        if(_keySettingCache[i].sbus == _sbus) {
+            if(_keySettingCache[i].channel == channel) {
+                if (_keySettingCache[i].switchType == 2) {
+                    keyString = getKeyNameFromIndex(i) + ", " + "Momentary switch";
+                    return keyString;
+                } else if (_keySettingCache[i].switchType == 1) {
+                    keyString = getKeyStringFromIndex(i) + ", " + "Toggle switch";
+                    return keyString;
+                } else {
+                    map[_keySettingCache[i].value] = i;
+                }
             }
         }
     }
@@ -323,10 +498,25 @@ QString KeyConfiguration::getKeySettingString(int channel)
             keyString += getKeyStringFromIndex(it.value());
         }
     }
+    if(_scrollWheelSetting.sbus == _sbus && _scrollWheelSetting.channel == channel) {
+        keyString = "Scroll Wheel";
+    }
     if(keyString.isEmpty()) {
         keyString = "Undefined";
     }
     return keyString;
+}
+
+bool KeyConfiguration::sbusEnable()
+{
+    return _sbusEnable;
+}
+
+void KeyConfiguration::setSbusEnable(bool sbusEnable)
+{
+    _sbusEnable = sbusEnable;
+
+    emit sbusEnableChanged();
 }
 
 int KeyConfiguration::getKeyIndex(int channel, int seq, int count)
@@ -335,10 +525,12 @@ int KeyConfiguration::getKeyIndex(int channel, int seq, int count)
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
         if(_keySettingCache[i].channel == channel) {
-            count--;
-            map[_keySettingCache[i].value] = i;
-            if (count <= 0) {
-                break;
+            if(_keySettingCache[i].sbus == _sbus) {
+                count--;
+                map[_keySettingCache[i].value] = i;
+                if (count <= 0) {
+                    break;
+                }
             }
         }
     }
@@ -360,10 +552,12 @@ int KeyConfiguration::getValue(int channel, int seq, int count)
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
         if(_keySettingCache[i].channel == channel) {
-            count--;
-            map[_keySettingCache[i].value] = i;
-            if (count <= 0) {
-                break;
+            if(_keySettingCache[i].sbus == _sbus) {
+                count--;
+                map[_keySettingCache[i].value] = i;
+                if (count <= 0) {
+                    break;
+                }
             }
         }
     }
@@ -390,37 +584,65 @@ int KeyConfiguration::getDefaultValue(int channel)
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
         if(_keySettingCache[i].channel == channel) {
-            return _keySettingCache[i].defaultValue;
+            if(_keySettingCache[i].sbus == _sbus) {
+                return _keySettingCache[i].defaultValue;
+            }
         }
     }
     return _channelDefaultMinValue;
 }
 
-int KeyConfiguration::getControlMode(int channel)
+int KeyConfiguration::getSwitchType(int channel)
 {
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
         if(_keySettingCache[i].channel == channel) {
-            return _keySettingCache[i].controlMode;
+            if(_keySettingCache[i].sbus == _sbus) {
+                return _keySettingCache[i].switchType;
+            }
         }
     }
     return 0;
 }
 
-void KeyConfiguration::resetKeySetting(int channel)
+int KeyConfiguration::getChannelMinNum()
 {
-    QSettings settings;
-    settings.beginGroup(_keySettingGroup);
+    return _channelMinNum;
+}
 
+void KeyConfiguration::resetKeySetting(int sbus, int channel)
+{
     for (int i = 0; i < _deviceKeyCount * 2; ++i)
     {
         if(_keySettingCache[i].channel == channel) {
-            memset(&_keySettingCache[i], 0 ,sizeof(KeySetting_t));
-            settings.setValue(QString::number(i), 0);
+            if(_keySettingCache[i].sbus == sbus) {
+                memset(&_keySettingCache[i], 0 ,sizeof(KeySetting_t));
+                _saveKeyConfiguration(i);
+            }
         }
     }
-    settings.endGroup();
-    setChannelDefaultValue(channel);
+    if(_scrollWheelSetting.sbus == sbus && _scrollWheelSetting.channel == channel) {
+        resetScrollWheelSetting();
+    }
+    setChannelDefaultValue(sbus, channel);
+    emit channelKeyCountsChanged();
+    emit keySettingStringsChanged();
+}
+
+void KeyConfiguration::resetScrollWheelSetting()
+{
+    if(_scrollWheelSetting.sbus > 0 && _scrollWheelSetting.channel > 0) {
+        _joystickManager->joystickMessageSender()->setChannelValue(_scrollWheelSetting.sbus, _scrollWheelSetting.channel, 0);
+    }
+    _scrollWheelSetting.sbus = 0;
+    _scrollWheelSetting.channel = 0;
+
+    _saveScrollWheelConfiguration();
+}
+
+QStringList KeyConfiguration::availableKeys()
+{
+    return _keyStringList;
 }
 
 QString KeyConfiguration::getKeyStringFromIndex(int index)
@@ -437,4 +659,9 @@ QString KeyConfiguration::getKeyNameFromIndex(int index)
         return _keyNameList[index/2];
     }
     return "";
+}
+
+QStringList KeyConfiguration::availableControlModes()
+{
+    return _controlModeList;
 }

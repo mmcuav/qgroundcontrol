@@ -176,7 +176,9 @@ SetupPage {
                     text:   qsTr("Joystick settings")
 
                     onClicked: {
+                        keySettingLoader.source = ""
                         keySettingRow.visible = false;
+                        channelMonitorLoader.sourceComponent = channelMonitor;
                         leftColumn.visible = true;
                         rightColumn.visible = true;
                     }
@@ -852,25 +854,45 @@ SetupPage {
                 } // Column - Axis Monitor
 
                 // Channel monitor
-                Column {
-                    width:          parent.width
-                    spacing:        20
+                Loader {
+                    id: channelMonitorLoader
+                    sourceComponent: channelMonitor
+                }
+                Component {
+                    id: channelMonitor
+                    Column {
+                        spacing:        20
 
-                    QGCLabel { text: qsTr("Channel Monitor") }
+                        QGCLabel { text: qsTr("Channel Monitor") }
 
-                    Row {
-                        spacing:    15
-                        Repeater {
-                            id:     channelValueMonitor
-                            model:  _joystickMessageSender.channelCount
-
+                        Row {
+                            QGCLabel { text: qsTr("RC1:") }
+                        }
+                        Row {
+                            x: 20
+                            visible: _joystickMessageSender.sbusChannelStatus[0] !== ""
                             QGCLabel {
-                                text: qsTr("C%1: %2/%3").arg(modelData+5).arg(_joystickMessageSender.channelSeqs[modelData])
-                                                        .arg(joystickManager.keyConfiguration.channelValueCounts[modelData])
+                                width: 580
+                                visible: true
+                                wrapMode:       Text.WordWrap
+                                text: _joystickMessageSender.sbusChannelStatus[0]
                             }
-                        } // Repeater
+                        }
+                        Row {
+                            QGCLabel { text: qsTr("RC2:") }
+                        }
+                        Row {
+                            x: 20
+                            visible: _joystickMessageSender.sbusChannelStatus[1] !== ""
+                            QGCLabel {
+                                width: 580
+                                visible: true
+                                wrapMode:       Text.WordWrap
+                                text: _joystickMessageSender.sbusChannelStatus[1]
+                            }
+                        }
                     }
-                } // Channel monitor
+                }// Channel monitor
 
                 QGCButton {
                     id:        keySettings
@@ -878,6 +900,7 @@ SetupPage {
                     onClicked: {
                         keySettingLoader.source = "QGroundControl/Controls/KeyConfiguration.qml"
                         keySettingRow.visible = true;
+                        channelMonitorLoader.sourceComponent = null;
                         leftColumn.visible = false;
                         rightColumn.visible = false;
                     }

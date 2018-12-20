@@ -34,8 +34,8 @@ private:
     virtual uint8_t _getHat(int hat,int i);
     bool handleKeyEventInner(int keycode, int action);
     int getKeyIndexByCode(int code);
-    void sendChannelValue(int ch, int value);
-    bool getChannelValue(int keyCode, KeyConfiguration::KeyAction_t action, int *ch, int *value);
+    void sendChannelValue(int sbus, int ch, int value);
+    bool getChannelValue(int keyCode, KeyConfiguration::KeyAction_t action, int *sbus, int *ch, int *value);
 
     int *btnCode;
     int *axisCode;
@@ -47,17 +47,17 @@ private:
         KEY_B,
         KEY_C,
         KEY_D,
+        KEY_CAM,
         KEY_MAX
     };
 
     typedef struct {
+        int keyCode;
         quint64 startTime;
         bool isPressed;
         bool isLongPress;
     } KeyState_t;
-
     KeyState_t _keyEvents[KEY_MAX];
-    int _keyCodes[KEY_MAX];
 
     static void _initStatic();
     static int * _androidBtnList; //list of all possible android buttons
@@ -69,6 +69,7 @@ private:
     static int KEYCODE_B;//button B
     static int KEYCODE_C;//button C
     static int KEYCODE_D;//button D
+    static int KEYCODE_CAM;//button CAM
     static QMutex m_mutex;
 
     int deviceId;

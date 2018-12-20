@@ -18,7 +18,6 @@ import QGroundControl.Controls      1.0
 import QGroundControl.Controllers   1.0
 import QGroundControl.ScreenTools   1.0
 
-
 import QtQuick.Controls 1.2
 import QtQuick.Controls.Styles 1.2
 
@@ -27,17 +26,24 @@ QGCView {
     viewPanel:  panel
 
     property real _gap: 15
+    property int _sbusID: 1
     property int _channelID: 0
     property int _keyCount: 0
+    property int _inUseSbusID: 0
     property int _inUseChannelID: 0
     property int _inUseKeyId: 0
     property int _dupKeyId: 0
     property bool _saveEnabled: false
     property bool _settingEnabled: true
-    property int _minValue: 0
-    property int _maxValue: 2047
+    property int _minSbusValue: 0
+    property int _maxSbusValue: 2047
+    property int _minPPMValue: 800
+    property int _maxPPMValue: 2200
+    property int _switchType: 1
+    property variant _sliderValues: []
+    property variant _keyIndexes: []
 
-    property var _keyConfiguration: joystickManager.keyConfiguration
+    property var _keyConfiguration: joystickManager.keyConfigurationList[0]
 
     QGCPalette { id: qgcPal; colorGroupEnabled: panel.enabled }
 
@@ -52,54 +58,46 @@ QGCView {
 
             function loadKeySetting() {
                 _settingEnabled = false;
-                if (_keyCount !== _keyConfiguration.getKeyCount(_channelID) &&
-                    _keyConfiguration.getKeyCount(_channelID) !== 0) {
-                    keyCountChangeDialog.open();
+                var keyValue;
+                var keyDefaultValue;
+                if (_keyConfiguration.getControlModeByKeyCount(_keyCount) !== _keyConfiguration.getControlMode(_channelID) &&
+                    _keyConfiguration.getControlMode(_channelID) !== 0) {
+                    controlModeChangeDialog.open();
                     return;
                 }
 
                 if(_keyCount == 1) {
+                    if(_keyConfiguration.getSwitchType(_channelID) > 0)
+                        _switchType = _keyConfiguration.getSwitchType(_channelID);
+                    else
+                        _switchType = 1;//default value
                     singleKeyCombo1.currentIndex = _keyConfiguration.getKeyIndex(_channelID, 1, 1);
-                    singleKeySlider1.value = _keyConfiguration.getValue(_channelID, 1, 1);
+                    keyValue = _keyConfiguration.getValue(_channelID, 1, 1);
+                    singleKeySlider1.value = _keyConfiguration.sbusEnable ? keyValue : _keyConfiguration.sbusToPPM(keyValue);
                     singleKeyLabel1.text = singleKeySlider1.value;
-                    singleKeySlider2.value = _keyConfiguration.getDefaultValue(_channelID);
+
+                    keyDefaultValue = _keyConfiguration.getDefaultValue(_channelID)
+                    singleKeySlider2.value = _keyConfiguration.sbusEnable ? keyDefaultValue : _keyConfiguration.sbusToPPM(keyDefaultValue);
                     singleKeyLabel2.text = singleKeySlider2.value;
-                    singleKeyCombox.currentIndex = (_keyConfiguration.getControlMode(_channelID) > 0) ?
-                                                   (_keyConfiguration.getControlMode(_channelID) - 1) : 0;
+                    switchTypeGroup.current = _switchType > 1 ? momentaryButton : troggleButton;
 
                     mainlayout.visible = false;
                     singleKeyLayout.visible = true;
                 } else {
-                    multiKeyRow3.visible = false;
-                    multiKeyRow4.visible = false;
-                    if (_keyCount > 1) {
-                        multiKeyRow1.visible = true;
-                        multiKeyRow2.visible = true;
-                        multiKeyRow1Combox.currentIndex = _keyConfiguration.getKeyIndex(_channelID, 1, _keyCount);
-                        multiKeyRow1Slider.value = _keyConfiguration.getValue(_channelID, 1, _keyCount);
-                        multiKeyRow1Label.text = multiKeyRow1Slider.value;
-                        multiKeyRow2Combox.currentIndex = _keyConfiguration.getKeyIndex(_channelID, 2, _keyCount);
-                        multiKeyRow2Slider.value = _keyConfiguration.getValue(_channelID, 2, _keyCount);
-                        multiKeyRow2Label.text = multiKeyRow2Slider.value;
+                    var i;
+                    for(i = 0; i < _keyCount; i++) {
+                        _keyIndexes[i] = _keyConfiguration.getKeyIndex(_channelID, i + 1, _keyCount);
+                        keyValue = _keyConfiguration.getValue(_channelID, i + 1, _keyCount);
+                        _sliderValues[i] = _keyConfiguration.sbusEnable ? keyValue : _keyConfiguration.sbusToPPM(keyValue);
                     }
-                    if (_keyCount > 2) {
-                        multiKeyRow3.visible = true;
-                        multiKeyRow3Combox.currentIndex = _keyConfiguration.getKeyIndex(_channelID, 3, _keyCount);
-                        multiKeyRow3Slider.value = _keyConfiguration.getValue(_channelID, 3, _keyCount);
-                        multiKeyRow3Label.text = multiKeyRow3Slider.value;
-                    }
-                    if (_keyCount > 3) {
-                        multiKeyRow4.visible = true;
-                        multiKeyRow4Combox.currentIndex = _keyConfiguration.getKeyIndex(_channelID, 4, _keyCount);
-                        multiKeyRow4Slider.value = _keyConfiguration.getValue(_channelID, 4, _keyCount);
-                        multiKeyRow4Label.text = multiKeyRow4Slider.value;
-                     }
                      mainlayout.visible = false;
-                     multiKeyLayout.visible = true;
+                     multiKeyLayoutLoader.sourceComponent = multiKeySetting;
+                     multiKeyLayoutLoader.visible = true;
                 }
             }
 
             function checkBeforeSave() {
+                var sbusInUse;
                 var channelInUse;
                 if(_keyCount == 1) {
                     // check duplicated value
@@ -108,285 +106,258 @@ QGCView {
                         return;
                     }
                     // check key used by other channel
-                    channelInUse = _keyConfiguration.keyIsInUse(singleKeyCombo1.currentIndex, singleKeyCombox.currentIndex+1);
-                    if(channelInUse !== 0 && channelInUse !== _channelID) {
-                        _inUseChannelID = channelInUse;
-                        _inUseKeyId = singleKeyCombo1.currentIndex;
-                        keyIsOccupiedDialog.open();
+                    _inUseSbusID = _keyConfiguration.sbusOnKey(singleKeyCombo1.currentIndex, _switchType);
+                    _inUseChannelID = _keyConfiguration.channelOnKey(singleKeyCombo1.currentIndex, _switchType);
+                    _inUseKeyId = singleKeyCombo1.currentIndex;
+                    if(_inUseSbusID !== 0 && _inUseSbusID !== _sbusID) {
+                        messageDialogTimer.start();
+                        return;
+                    }
+                    if(_inUseChannelID !== 0 && _inUseChannelID !== _channelID) {
+                        messageDialogTimer.start();
                         return;
                     }
                 } else {
                     // check duplicated key
-                    if(multiKeyRow1Combox.currentIndex == multiKeyRow2Combox.currentIndex ||
-                       (multiKeyRow1Combox.currentIndex == multiKeyRow3Combox.currentIndex && multiKeyRow3.visible) ||
-                       (multiKeyRow1Combox.currentIndex == multiKeyRow4Combox.currentIndex && multiKeyRow4.visible)) {
-                        _dupKeyId = multiKeyRow1Combox.currentIndex;
-                        dupKeyDialog.open();
-                        return;
-                    }
-                    if((multiKeyRow2Combox.currentIndex == multiKeyRow3Combox.currentIndex && multiKeyRow3.visible) ||
-                       (multiKeyRow2Combox.currentIndex == multiKeyRow4Combox.currentIndex && multiKeyRow4.visible)) {
-                        _dupKeyId = multiKeyRow2Combox.currentIndex;
-                        dupKeyDialog.open();
-                        return;
-                    }
-                    if((multiKeyRow3Combox.currentIndex == multiKeyRow4Combox.currentIndex && multiKeyRow3.visible && multiKeyRow4.visible)) {
-                        _dupKeyId = multiKeyRow3Combox.currentIndex;
-                        dupKeyDialog.open();
-                        return;
+                    var i, j;
+                    for(i = 0; i < _keyCount - 1; i++) {
+                        for(j = i + 1; j < _keyCount; j++) {
+                            if(_keyIndexes[i] == _keyIndexes[j]) {
+                                _dupKeyId = _keyIndexes[i];
+                                dupKeyDialog.open();
+                                return;
+                            }
+                        }
                     }
                     // check duplicated value
-                    if(multiKeyRow1Slider.value == multiKeyRow2Slider.value ||
-                       (multiKeyRow1Slider.value == multiKeyRow3Slider.value && multiKeyRow3.visible) ||
-                       (multiKeyRow1Slider.value == multiKeyRow4Slider.value && multiKeyRow4.visible) ||
-                       (multiKeyRow2Slider.value == multiKeyRow3Slider.value && multiKeyRow3.visible) ||
-                       (multiKeyRow2Slider.value == multiKeyRow4Slider.value && multiKeyRow4.visible) ||
-                       (multiKeyRow3Slider.value == multiKeyRow4Slider.value &&  multiKeyRow3.visible && multiKeyRow4.visible)) {
-                        dupValueDialog.open();
-                        return;
+                    for(i = 0; i < _keyCount - 1; i++) {
+                        for(j = i + 1; j < _keyCount; j++) {
+                            if(_sliderValues[i] == _sliderValues[j]) {
+                                dupValueDialog.open();
+                                return;
+                            }
+                        }
                     }
                     // check key used by other channel
-                    channelInUse = _keyConfiguration.keyIsInUse(multiKeyRow1Combox.currentIndex, 0);
-                    if (multiKeyRow1.visible && channelInUse !== 0 && channelInUse !== _channelID) {
-                        _inUseChannelID = channelInUse;
-                        _inUseKeyId = multiKeyRow1Combox.currentIndex;
-                        keyIsOccupiedDialog.open();
-                        return;
-                    }
-                    channelInUse = _keyConfiguration.keyIsInUse(multiKeyRow2Combox.currentIndex, 0);
-                    if (multiKeyRow2.visible && channelInUse !== 0 && channelInUse !== _channelID) {
-                        _inUseChannelID = channelInUse;
-                        _inUseKeyId = multiKeyRow2Combox.currentIndex;
-                        keyIsOccupiedDialog.open();
-                        return;
-                    }
-                    channelInUse = _keyConfiguration.keyIsInUse(multiKeyRow3Combox.currentIndex, 0);
-                    if (multiKeyRow3.visible && channelInUse !== 0 && channelInUse !== _channelID) {
-                        _inUseChannelID = channelInUse;
-                        _inUseKeyId = multiKeyRow3Combox.currentIndex;
-                        keyIsOccupiedDialog.open();
-                        return;
-                    }
-                    channelInUse = _keyConfiguration.keyIsInUse(multiKeyRow4Combox.currentIndex, 0);
-                    if (multiKeyRow4.visible && channelInUse !== 0 && channelInUse !== _channelID) {
-                        _inUseChannelID = channelInUse;
-                        _inUseKeyId = multiKeyRow4Combox.currentIndex;
-                        keyIsOccupiedDialog.open();
-                        return;
+                    for(i = 0; i < _keyCount; i++) {
+                        _inUseKeyId = _keyIndexes[i];
+                        _inUseSbusID = _keyConfiguration.sbusOnKey(_keyIndexes[i], 0);
+                        _inUseChannelID = _keyConfiguration.channelOnKey(_keyIndexes[i], 0);
+
+                        if(_inUseSbusID !== 0 && _inUseSbusID !== _sbusID) {
+                            messageDialogTimer.start();
+                            return;
+                        }
+                        if(_inUseChannelID !== 0 && _inUseChannelID !== _channelID) {
+                            messageDialogTimer.start();
+                            return;
+                        }
                     }
                 }
                 _saveEnabled = true;
             }
 
             function saveChannelKeySetting() {
+                var i;
+                var keyValue;
+                var initialKeyValue;
                 _saveEnabled = false;
                 checkBeforeSave();
                 if(!_saveEnabled) {
                     return;
                 }
-                _keyConfiguration.resetKeySetting(_channelID);
+                _keyConfiguration.resetKeySetting(_sbusID, _channelID);
 
                 if(_keyCount == 1) {
+                    keyValue = _keyConfiguration.sbusEnable ? singleKeySlider1.value : _keyConfiguration.ppmToSbus(singleKeySlider1.value);
+                    initialKeyValue = _keyConfiguration.sbusEnable ? singleKeySlider2.value : _keyConfiguration.ppmToSbus(singleKeySlider2.value);
                     _keyConfiguration.saveSingleKeySetting(singleKeyCombo1.currentIndex,
-                                                           singleKeyCombox.currentIndex+1,
-                                                           _channelID, singleKeySlider1.value,
-                                                           singleKeySlider2.value);
+                                                           _switchType,
+                                                           _channelID, keyValue,
+                                                           initialKeyValue);
                 }
                 if(_keyCount > 1) {
-                    _keyConfiguration.saveKeySetting(multiKeyRow1Combox.currentIndex, _channelID, multiKeyRow1Slider.value);
-                    _keyConfiguration.saveKeySetting(multiKeyRow2Combox.currentIndex, _channelID, multiKeyRow2Slider.value);
+                    for(i = 0; i < _keyCount; i++) {
+                        keyValue = _keyConfiguration.sbusEnable ? _sliderValues[i] : _keyConfiguration.ppmToSbus(_sliderValues[i]);
+                        _keyConfiguration.saveKeySetting(_keyIndexes[i], _channelID, keyValue);
+                    }
                 }
-                if(_keyCount > 2) {
-                    _keyConfiguration.saveKeySetting(multiKeyRow3Combox.currentIndex, _channelID, multiKeyRow3Slider.value);
-                }
-                if(_keyCount > 3) {
-                    _keyConfiguration.saveKeySetting(multiKeyRow4Combox.currentIndex, _channelID, multiKeyRow4Slider.value);
-                }
-                initChannelStatus();
-                _keyConfiguration.setChannelDefaultValue(_channelID);
+                _keyConfiguration.setChannelDefaultValue(_sbusID, _channelID);
 
                 singleKeyLayout.visible = false;
-                multiKeyLayout.visible = false;
                 mainlayout.visible = true;
+                multiKeyLayoutLoader.visible = false;
+                multiKeyLayoutLoader.sourceComponent = null;
             }
 
-            function initChannelStatus() {
-                ch5Combo.currentIndex = Math.max(_keyConfiguration.getKeyCount(5) - 1, 0);
-                ch5Label.text = _keyConfiguration.getKeySettingString(5);
-                ch6Combo.currentIndex = Math.max(_keyConfiguration.getKeyCount(6) - 1, 0);
-                ch6Label.text = _keyConfiguration.getKeySettingString(6);
-                ch7Combo.currentIndex = Math.max(_keyConfiguration.getKeyCount(7) - 1, 0)
-                ch7Label.text = _keyConfiguration.getKeySettingString(7);
-                ch8Combo.currentIndex = Math.max(_keyConfiguration.getKeyCount(8) - 1, 0)
-                ch8Label.text = _keyConfiguration.getKeySettingString(8);
-                ch9Combo.currentIndex = Math.max(_keyConfiguration.getKeyCount(9) - 1, 0)
-                ch9Label.text = _keyConfiguration.getKeySettingString(9);
-            }
+            ExclusiveGroup { id: sbusButtonGroup }
 
-
-            Row {
+            Column {
                 id:             mainlayout
                 anchors.fill:   parent
                 anchors.leftMargin: 20
                 anchors.topMargin:  100
+                spacing: 10
+
+                Row {
+                    spacing: 22
+                    QGCButton {
+                        id: sbus1Button
+                        text:      qsTr("RC 1")
+                        checkable:              true
+                        checked:                true
+
+                        onClicked: {
+                            sbus1Button.checked = true;
+                            sbus2Button.checked = false;
+                            _sbusID = 1;
+                            _keyConfiguration = joystickManager.keyConfigurationList[0];
+                            channelSettingLoader1.visible = true;
+                            channelSettingLoader2.visible = false;
+                        }
+                    }
+                    QGCButton {
+                        id: sbus2Button
+                        text:      qsTr("RC 2")
+                        checkable:              true
+                        checked:                false
+
+                        onClicked: {
+                            sbus1Button.checked = false;
+                            sbus2Button.checked = true;
+                            _sbusID = 2;
+                            _keyConfiguration = joystickManager.keyConfigurationList[1];
+                            channelSettingLoader1.visible = false;
+                            channelSettingLoader2.visible = true;
+                        }
+                    }
+                }
+                Row {
+                    Rectangle {
+                        color: "black"
+                        height: 1
+                        width: 1500
+                    }
+                }
+
+                Loader {
+                    id: channelSettingLoader1
+                    sourceComponent: channelSetting
+                    visible:        true
+                }
+
+                Loader {
+                    id: channelSettingLoader2
+                    sourceComponent: channelSetting
+                    visible:        false
+                }
+            }
+
+            Component {
+                id: channelSetting
+
                 Column{
                     spacing: 22
                     Row{
-                        spacing: 100
+                        spacing: 70
                         QGCLabel {
                             text: qsTr("Channel")
                         }
                         QGCLabel {
-                            text: qsTr("Count of keys")
+                            text: qsTr("Control Mode")
                         }
-                    }
-                    Row{
-                        spacing: 150
-                        QGCLabel {
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                            text:              qsTr("CH5")
-                        }
+                        Column {
+                            QGCCheckBox {
+                                x: 360
+                                id: sbusEnable
+                                checked: _keyConfiguration.sbusEnable
+                                text: qsTr("Display channel values as sbus mode")
 
-                        QGCComboBox {
-                            id:         ch5Combo
-                            model:      [qsTr("1"), qsTr("2"), qsTr("3"), qsTr("4")]
-                            width:      200
-                        }
-
-                        QGCButton {
-                            id:        ch5Button
-                            text:      qsTr("Settings")
-                            onClicked:{
-                                _channelID = 5;
-                                _keyCount = ch5Combo.currentIndex + 1;
-                                centreWindow.loadKeySetting();
+                                onClicked: _keyConfiguration.sbusEnable = checked
                             }
-                        }
-                        QGCLabel {
-                            id:                ch5Label
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
-                    }
-                    Row {
-                        spacing: 150
-                        QGCLabel {
-                            text:              qsTr("CH6")
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
-
-                        QGCComboBox {
-                            id:         ch6Combo
-                            model:      [qsTr("1"), qsTr("2"), qsTr("3"), qsTr("4")]
-                            width:      200
-                        }
-
-                        QGCButton {
-                            id:        ch6Button
-                            text:      qsTr("Settings")
-                            onClicked: {
-                                _channelID = 6;
-                                _keyCount = ch6Combo.currentIndex + 1;
-                                centreWindow.loadKeySetting();
-                            }
-                        }
-                        QGCLabel {
-                            id:                ch6Label
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
                         }
                     }
 
-                    Row {
-                        spacing: 150
-                        QGCLabel {
-                            text:              qsTr("CH7")
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
+                    Rectangle {
+                        height: 1100
+                        width: 1500
+                        QGCFlickable {
+                            height: 1100
+                            width: 1500
+                            visible: true
+                            clip:               true
+                            contentHeight: channelSetColumn.height
+                            contentWidth: channelSetColumn.width
+                            Column {
+                                id: channelSetColumn
+                                spacing: 20
+                                Repeater {
+                                    id:          chrepeater
+                                    model:       _keyConfiguration.channelCount
 
-                        QGCComboBox {
-                            id:         ch7Combo
-                            model:      [qsTr("1"), qsTr("2"), qsTr("3"), qsTr("4")]
-                            width:      200
-                        }
+                                    Row{
+                                        id:      chrow
+                                        spacing: 120
 
-                        QGCButton {
-                            id:        ch7Button
-                            text:      qsTr("Settings")
-                            onClicked: {
-                                _channelID = 7;
-                                _keyCount = ch7Combo.currentIndex + 1;
-                                centreWindow.loadKeySetting();
+                                        QGCLabel {
+                                            anchors.top:       parent.top
+                                            anchors.topMargin: _gap
+                                            text:              qsTr("CH" + (modelData + _keyConfiguration.getChannelMinNum()))
+                                            width:               70
+                                        }
+
+                                        QGCComboBox {
+                                            id:         chCombo
+                                            model:      _keyConfiguration.availableControlModes
+                                            width:      250
+                                            currentIndex: Math.max(_keyConfiguration.channelKeyCounts[modelData], 0)
+                                        }
+
+                                        QGCLabel {
+                                            width:     chButton.width
+                                            visible:   !chResetButton.visible && !chButton.visible && !chOKButton.visible ? true : false
+                                        }
+                                        QGCButton {
+                                            id:        chButton
+                                            text:      qsTr("Settings")
+                                            width:     150
+                                            visible:   chCombo.currentIndex > 0 && chCombo.currentText != "Scroll Wheel" ? true : false
+                                            onClicked:{
+                                                _channelID = modelData + _keyConfiguration.getChannelMinNum();
+                                                _keyCount = chCombo.currentIndex > 1 ? chCombo.currentIndex - 1 : chCombo.currentIndex;
+                                                centreWindow.loadKeySetting();
+                                            }
+                                        }
+                                        QGCButton {
+                                            id:        chOKButton
+                                            text:      qsTr("OK")
+                                            width:     150
+                                            visible:   chCombo.currentText == "Scroll Wheel" && chLabel.text != "Scroll Wheel" ? true : false
+                                            onClicked:{
+                                                _channelID = modelData + _keyConfiguration.getChannelMinNum();
+                                                scrollWheelDialog.open();
+                                            }
+                                        }
+                                        QGCButton {
+                                            id:        chResetButton
+                                            text:      qsTr("Reset")
+                                            width:     150
+                                            visible:   chCombo.currentIndex == 0 && _keyConfiguration.channelKeyCounts[modelData] ? true : false
+                                            onClicked:{
+                                                _channelID = modelData + _keyConfiguration.getChannelMinNum();
+                                                channelResetDialog.open();
+                                            }
+                                        }
+                                        QGCLabel {
+                                            id:                chLabel
+                                            anchors.top:       parent.top
+                                            anchors.topMargin: _gap
+                                            text:              _keyConfiguration.keySettingStrings[modelData]
+                                        }
+                                    }
+                                }//Repeater
                             }
-                        }
-                        QGCLabel {
-                            id:                ch7Label
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
-                    }
-
-                    Row{
-                        spacing: 150
-                        QGCLabel {
-                            text:              qsTr("CH8")
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
-
-                        QGCComboBox {
-                            id:         ch8Combo
-                            model:      [qsTr("1"), qsTr("2"), qsTr("3"), qsTr("4")]
-                            width:      200
-                        }
-
-                        QGCButton {
-                            id:        ch8Button
-                            text:      qsTr("Settings")
-                            onClicked: {
-                                _channelID = 8;
-                                _keyCount = ch8Combo.currentIndex + 1;
-                                centreWindow.loadKeySetting();
-                            }
-                        }
-                        QGCLabel {
-                            id:                ch8Label
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
-                    }
-
-                    Row{
-                        spacing: 150
-                        QGCLabel {
-                            text:              qsTr("CH9")
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
-
-                        QGCComboBox {
-                            id:         ch9Combo
-                            model:      [qsTr("1"), qsTr("2"), qsTr("3"), qsTr("4")]
-                            width:      200
-                        }
-
-                        QGCButton {
-                            id:        ch9Button
-                            text:      qsTr("Settings")
-                            onClicked: {
-                                _channelID = 9;
-                                _keyCount = ch9Combo.currentIndex + 1;
-                                centreWindow.loadKeySetting();
-                            }
-                        }
-                        QGCLabel {
-                            id:                ch9Label
-                            anchors.top:       parent.top
-                            anchors.topMargin: _gap
-                        }
+                        }//QGCFlickable
                     }
                 }
             }
@@ -409,7 +380,7 @@ QGCView {
                     }
                     QGCComboBox {
                         id:         singleKeyCombo1
-                        model:      [qsTr("A short"),qsTr("A long"), qsTr("B short"),qsTr("B long"), qsTr("C short"),qsTr("C long"), qsTr("D short"),qsTr("D long")]
+                        model:      _keyConfiguration.availableKeys
                         width:      300
                     }
                     QGCLabel {
@@ -421,8 +392,8 @@ QGCView {
                     QGCSlider {
                         id:                  singleKeySlider1
                         orientation:         Qt.Horizontal
-                        minimumValue:        _minValue
-                        maximumValue:        _maxValue
+                        minimumValue:        _keyConfiguration.sbusEnable ? _minSbusValue : _minPPMValue;
+                        maximumValue:        _keyConfiguration.sbusEnable ? _maxSbusValue : _maxPPMValue;
                         stepSize:            1
                         width:               800
 
@@ -439,7 +410,7 @@ QGCView {
                         width:               40
                     }
                     QGCLabel {
-                        text:                qsTr("Start value")
+                        text:                qsTr("Initial value")
                         anchors.top:         parent.top
                         anchors.topMargin:   _gap
                         width:               300
@@ -453,8 +424,8 @@ QGCView {
                     QGCSlider {
                         id:                   singleKeySlider2
                         orientation:          Qt.Horizontal
-                        minimumValue:         _minValue
-                        maximumValue:         _maxValue
+                        minimumValue:         _keyConfiguration.sbusEnable ? _minSbusValue : _minPPMValue;
+                        maximumValue:         _keyConfiguration.sbusEnable ? _maxSbusValue : _maxPPMValue;
                         stepSize:             1
                         width:                800
 
@@ -463,21 +434,41 @@ QGCView {
                         }
                     }
                 }
+                ExclusiveGroup {
+                    id: switchTypeGroup
+                    onCurrentChanged: {
+                        switch(current) {
+                        case troggleButton:
+                            _switchType = 1;
+                            break;
+                        case momentaryButton:
+                            _switchType = 2;
+                            break;
+                        }
+                    }
+                }
                 Row{
-                    id:      singleKeyRow3
+                    id:      singleKeyRow4
                     spacing: 100
                     QGCLabel {
                         text:                qsTr(" ")
                         width:               40
                     }
                     QGCLabel {
-                        text:                qsTr("Control mode")
+                        text:                qsTr("Switch Type")
                         width:               300
                     }
-                    QGCComboBox {
-                        id:         singleKeyCombox
-                        model:      [qsTr("Keep after key release"),qsTr("Reset after key release")]
-                        width:      500
+                    QGCRadioButton {
+                        id: troggleButton
+                        checked:            true
+                        exclusiveGroup:     switchTypeGroup
+                        text:      qsTr("Toggle switch")
+                    }
+                    QGCRadioButton {
+                        id: momentaryButton
+                        checked:            false
+                        exclusiveGroup:     switchTypeGroup
+                        text:      qsTr("Momentary switch")
                     }
                 }
                 Row{
@@ -490,7 +481,7 @@ QGCView {
                         id:        singleKeySaveButton
                         text:      qsTr("Save")
                         onClicked: {
-                            if (singleKeyCombox.currentIndex == 1) {
+                            if (_switchType == 2) {
                                 useBothPressDialog.open();
                             } else {
                                 centreWindow.saveChannelKeySetting();
@@ -516,166 +507,93 @@ QGCView {
                 }
             }
 
-            Column{
-                id:                 multiKeyLayout
-                anchors.fill:       parent
-                anchors.leftMargin: 20
-                anchors.topMargin:  100
-                spacing:            30
-                Row{
-                    id:      multiKeyRow1
-                    spacing: 100
-                    QGCLabel {
-                        id:                  multiKeyLabel
-                        anchors.top:         parent.top
-                        anchors.topMargin:   _gap
-                        width:               40
-                        text:                qsTr("CH" + _channelID)
-                    }
-                    QGCComboBox {
-                        id:         multiKeyRow1Combox
-                        model:      [qsTr("A short"),qsTr("A long"), qsTr("B short"),qsTr("B long"), qsTr("C short"),qsTr("C long"), qsTr("D short"),qsTr("D long")]
-                        width:      300
-                    }
-                    QGCLabel {
-                        id:                  multiKeyRow1Label
-                        anchors.top:         parent.top
-                        anchors.topMargin:   _gap
-                        width:               40
-                    }
-                    QGCSlider {
-                        id:                  multiKeyRow1Slider
-                        orientation:         Qt.Horizontal
-                        minimumValue:        _minValue
-                        maximumValue:        _maxValue
-                        stepSize:            1
-                        width:               800
+            Loader {
+                id: multiKeyLayoutLoader
+                sourceComponent: null
+                visible:        false
+            }
+            Component {
+                id: multiKeySetting
+                Column{
+                    id:                 multiKeyLayout
+                    anchors.fill:       parent
+                    anchors.leftMargin: 20
+                    anchors.topMargin:  100
+                    spacing:            30
+                    Repeater {
+                        id:    multiKeyRepeater
+                        model: _keyCount
 
-                        onValueChanged: {
-                            multiKeyRow1Label.text = multiKeyRow1Slider.value;
-                        }
-                    }
-                }
-                Row{
-                    id:      multiKeyRow2
-                    spacing: 100
-                    QGCLabel {
-                        text:       qsTr(" ")
-                        width:      40
-                    }
-                    QGCComboBox {
-                        id:         multiKeyRow2Combox
-                        model:      [qsTr("A short"),qsTr("A long"), qsTr("B short"),qsTr("B long"), qsTr("C short"),qsTr("C long"), qsTr("D short"),qsTr("D long")]
-                        width:      300
-                    }
-                    QGCLabel {
-                        id:                  multiKeyRow2Label
-                        anchors.top:         parent.top
-                        anchors.topMargin:   _gap
-                        width:               40
-                    }
-                    QGCSlider {
-                        id:                  multiKeyRow2Slider
-                        orientation:         Qt.Horizontal
-                        minimumValue:        _minValue
-                        maximumValue:        _maxValue
-                        stepSize:            1
-                        width:               800
+                        Row{
+                            id:      multiKeyRow
+                            spacing: 100
+                            QGCLabel {
+                                id:                  multiKeyLabe
+                                anchors.top:         parent.top
+                                anchors.topMargin:   _gap
+                                width:               40
+                                text:                qsTr("CH" + _channelID)
+                            }
+                            QGCComboBox {
+                                id:         multiKeyRowCombox
+                                model:      _keyConfiguration.availableKeys
+                                width:      300
+                                currentIndex: _keyIndexes[modelData]
 
-                        onValueChanged: {
-                            multiKeyRow2Label.text = multiKeyRow2Slider.value;
-                        }
-                    }
-                }
-                Row{
-                    id:      multiKeyRow3
-                    spacing: 100
-                    QGCLabel {
-                        text:       qsTr(" ")
-                        width:      40
-                    }
-                    QGCComboBox {
-                        id:         multiKeyRow3Combox
-                        model:      [qsTr("A short"),qsTr("A long"), qsTr("B short"),qsTr("B long"), qsTr("C short"),qsTr("C long"), qsTr("D short"),qsTr("D long")]
-                        width:      300
-                    }
-                    QGCLabel {
-                        id:                  multiKeyRow3Label
-                        anchors.top:         parent.top
-                        anchors.topMargin:   _gap
-                        width:               40
-                    }
-                    QGCSlider {
-                        id:                  multiKeyRow3Slider
-                        orientation:         Qt.Horizontal
-                        minimumValue:        _minValue
-                        maximumValue:        _maxValue
-                        stepSize:            1
-                        width:               800
+                                onActivated: _keyIndexes[modelData] = index
+                            }
+                            QGCLabel {
+                                id:                  multiKeyRowLabel
+                                anchors.top:         parent.top
+                                anchors.topMargin:   _gap
+                                width:               40
+                                text:                _sliderValues[modelData]
+                            }
+                            QGCSlider {
+                                id:                  multiKeyRowSlider
+                                orientation:         Qt.Horizontal
+                                minimumValue:        _keyConfiguration.sbusEnable ? _minSbusValue : _minPPMValue;
+                                maximumValue:        _keyConfiguration.sbusEnable ? _maxSbusValue : _maxPPMValue;
+                                stepSize:            1
+                                width:               800
+                                value:               _sliderValues[modelData]
 
-                        onValueChanged: {
-                            multiKeyRow3Label.text = multiKeyRow3Slider.value;
+                                onValueChanged: {
+                                    multiKeyRowLabel.text = multiKeyRowSlider.value;
+                                    _sliderValues[modelData] = multiKeyRowSlider.value;
+                                }
+                            }
                         }
                     }
-                }
-                Row{
-                    id:      multiKeyRow4
-                    spacing: 100
-                    QGCLabel {
-                        text:       qsTr(" ")
-                        width:      40
-                    }
-                    QGCComboBox {
-                        id:         multiKeyRow4Combox
-                        model:      [qsTr("A short"),qsTr("A long"), qsTr("B short"),qsTr("B long"), qsTr("C short"),qsTr("C long"), qsTr("D short"),qsTr("D long")]
-                        width:      300
-                    }
-                    QGCLabel {
-                        id:                  multiKeyRow4Label
-                        anchors.top:         parent.top
-                        anchors.topMargin:   _gap
-                        width:               40
-                    }
-                    QGCSlider {
-                        id:                   multiKeyRow4Slider
-                        orientation:          Qt.Horizontal
-                        minimumValue:         _minValue
-                        maximumValue:         _maxValue
-                        stepSize:             1
-                        width:                800
+                    Row{
+                        spacing: 200
+                        QGCLabel {
+                            text:       qsTr(" ")
+                            width:      40
+                        }
 
-                        onValueChanged: {
-                            multiKeyRow4Label.text = multiKeyRow4Slider.value;
+                        QGCButton {
+                            id:        mulSaveButton
+                            text:      qsTr("Save")
+                            onClicked: {
+                                centreWindow.saveChannelKeySetting();
+                            }
                         }
-                    }
-                }
-                Row{
-                    spacing: 200
-                    QGCLabel {
-                        text:       qsTr(" ")
-                        width:      40
-                    }
-
-                    QGCButton {
-                        id:        mulSaveButton
-                        text:      qsTr("Save")
-                        onClicked: {
-                            centreWindow.saveChannelKeySetting();
+                        QGCButton {
+                            id:        mulResetButton
+                            text:      qsTr("Reset")
+                            onClicked: {
+                                channelResetDialog.open();
+                            }
                         }
-                    }
-                    QGCButton {
-                        id:        mulResetButton
-                        text:      qsTr("Reset")
-                        onClicked: {
-                            channelResetDialog.open();
-                        }
-                    }
-                    QGCButton {
-                        id:        mulCancelButton
-                        text:      qsTr("Cancel")
-                        onClicked: {
-                            multiKeyLayout.visible = false;
-                            mainlayout.visible = true;
+                        QGCButton {
+                            id:        mulCancelButton
+                            text:      qsTr("Cancel")
+                            onClicked: {
+                                multiKeyLayoutLoader.visible = false;
+                                multiKeyLayoutLoader.sourceComponent = null;
+                                mainlayout.visible = true;
+                            }
                         }
                     }
                 }
@@ -684,8 +602,7 @@ QGCView {
             Component.onCompleted: {
                 mainlayout.visible = true;
                 singleKeyLayout.visible = false;
-                multiKeyLayout.visible = false;
-                centreWindow.initChannelStatus();
+                multiKeyLayoutLoader.visible = false;
             }
 
             MessageDialog {
@@ -694,12 +611,21 @@ QGCView {
                 icon:       StandardIcon.Warning
                 standardButtons: StandardButton.Yes | StandardButton.No
                 title:      qsTr("NOTICE")
-                text:       qsTr("\"%1\" has been used by CH%2. Confirm to clear configuration of CH%2 and continue?")
-                                .arg(_keyConfiguration.getKeyStringFromIndex(_inUseKeyId)).arg(_inUseChannelID)
+                text:       qsTr("\"%1\" has been used by Sbus %2/CH%3. Confirm to clear configuration of Sbus %2/CH%3 and continue?")
+                                .arg(_keyConfiguration.getKeyStringFromIndex(_inUseKeyId)).arg(_inUseSbusID).arg(_inUseChannelID)
                 onYes: {
-                    _keyConfiguration.resetKeySetting(_inUseChannelID);
-                    centreWindow.initChannelStatus();
+                    _keyConfiguration.resetKeySetting(_inUseSbusID, _inUseChannelID);
                     centreWindow.saveChannelKeySetting();
+                 }
+            }
+            Timer {
+                id: messageDialogTimer
+                interval: 200
+                repeat: false
+                triggeredOnStart: false
+                running: false
+                onTriggered: {
+                    keyIsOccupiedDialog.open();
                 }
             }
 
@@ -719,7 +645,7 @@ QGCView {
                 icon:       StandardIcon.Warning
                 standardButtons: StandardButton.Yes | StandardButton.No
                 title:      qsTr("NOTICE")
-                text:       qsTr("In this control mode, both short press and long press of the key are occupied. Continue?")
+                text:       qsTr("In this switch type, both short press and long press of the key are occupied. Continue?")
                 onYes: {
                     centreWindow.saveChannelKeySetting();
                 }
@@ -728,19 +654,17 @@ QGCView {
             }
 
             MessageDialog {
-                id:         keyCountChangeDialog
+                id:         controlModeChangeDialog
                 visible:    false
                 icon:       StandardIcon.Warning
                 standardButtons: StandardButton.Yes | StandardButton.No
                 title:      qsTr("NOTICE")
-                text:       qsTr("The count of key for CH%1 is changed. Confirm to clear configuration of CH%1 and continue?").arg(_channelID)
+                text:       qsTr("The control mode of CH%1 is changed. Confirm to clear configuration of CH%1 and continue?").arg(_channelID)
                 onYes: {
-                    _keyConfiguration.resetKeySetting(_channelID);
-                    centreWindow.initChannelStatus();
+                    _keyConfiguration.resetKeySetting(_sbusID, _channelID);
                     centreWindow.loadKeySetting();
                 }
                 onNo: {
-                    centreWindow.initChannelStatus();
                 }
             }
 
@@ -754,6 +678,20 @@ QGCView {
             }
 
             MessageDialog {
+                id:         scrollWheelDialog
+                visible:    false
+                icon:       StandardIcon.Warning
+                standardButtons: StandardButton.Yes | StandardButton.No
+                title:      qsTr("NOTICE")
+                text:       qsTr("Confirm to configure the scroll wheel to control SBUS%1 CH%2? This will clear configuration of SBUS%1 CH%2 and current scroll wheel setting.").arg(_sbusID).arg(_channelID)
+                onYes: {
+                    _keyConfiguration.resetKeySetting(_sbusID, _channelID);
+                    _keyConfiguration.resetScrollWheelSetting();
+                    _keyConfiguration.saveScollWheelSetting(_channelID);
+                }
+            }
+
+            MessageDialog {
                 id:         channelResetDialog
                 visible:    false
                 icon:       StandardIcon.Warning
@@ -761,11 +699,11 @@ QGCView {
                 title:      qsTr("NOTICE")
                 text:       qsTr("Confirm to clear configuration of CH%1?").arg(_channelID)
                 onYes: {
-                    _keyConfiguration.resetKeySetting(_channelID);
-                    centreWindow.initChannelStatus();
+                    _keyConfiguration.resetKeySetting(_sbusID, _channelID);
                     mainlayout.visible = true;
                     singleKeyLayout.visible = false;
-                    multiKeyLayout.visible = false;
+                    multiKeyLayoutLoader.visible = false;
+                    multiKeyLayoutLoader.sourceComponent = null;
                 }
             }
         }

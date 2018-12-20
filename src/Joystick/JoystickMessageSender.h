@@ -26,16 +26,16 @@ public:
     ~JoystickMessageSender();
 
     Q_PROPERTY(int channelCount READ channelCount CONSTANT)
-    Q_PROPERTY(QVariantList channelSeqs READ channelSeqs NOTIFY channelSeqsChanged)
+    Q_PROPERTY(QVariantList sbusChannelStatus READ sbusChannelStatus NOTIFY sbusChannelStatusChanged)
 
-    Q_INVOKABLE int getChannelValue(int ch);
+    static int getChannelValue(int sbus, int ch);
 
-    void setChannelValue(int ch, uint16_t value);
+    void setChannelValue(int sbus, int ch, uint16_t value);
     int channelCount();
-    QVariantList channelSeqs();
+    QVariantList sbusChannelStatus();
 
 signals:
-    void channelSeqsChanged();
+    void sbusChannelStatusChanged();
 
 private slots:
     void _handleManualControl(float roll, float pitch, float yaw, float thrust, float wheel, quint16 buttons, int joystickMode);
@@ -51,5 +51,6 @@ private:
     QString _remoteHostIp;
     int _mavlinkChannel;
     int _channelCount;
-    uint16_t _channelValues[5];
+    static uint16_t _sbus0ChannelValues[12];//sbus0
+    static uint16_t _sbus1ChannelValues[16];//sbus1
 };
