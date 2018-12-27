@@ -33,6 +33,7 @@
 #define D2D_DOWNLINK_BANDWIDTH_CONFIG_TAG     "DL_BW_CFG"
 
 #define D2D_TX_POWER_CTRL_STATE_TAG           "TX_PWR_CTRL"
+#define D2D_TX_ANT_BITMAP_TAG                 "TX_ANT_BITMAP"
 
 
 /* qgc cmd message tag definition */
@@ -51,6 +52,7 @@
 #define QGC_FREQ_AUTO_CALIBRATE_TAG           "QGCAUTOCLBR"
 
 #define QGC_TX_POWER_CTRL_TAG                 "QGCTXPWRCTRL"
+#define QGC_TX_ANTENNA_CTRL_TAG               "QGCTXANTCTRL"
 
 
 //socket connect server
@@ -119,6 +121,9 @@ private:
     //QGCTXPWRCTRL
     int clPWRctl;
 
+    //QGCTXANTCTRL
+    int txAntCtrl;
+
 public slots:
     void newLocalConnection();
     void dataReceived();
@@ -150,6 +155,9 @@ signals:
 
     //QGCTXPWRCTRL
     void clPWRctlSingle(int index);
+
+    //QGCTXANTCTRL
+    void txAntCtrlSingle(int index);
 
 public:
     static void Destroy();
@@ -200,5 +208,9 @@ public:
 
     //QGCTXPWRCTRL
     Q_INVOKABLE  void setCliclPWRctl(int value);
+
+    //QGCTXANTCTRL
+    Q_INVOKABLE  void setClitxAntCtrl(int value);
+
 };
 #endif // D2DINFORDATASINGLE_H

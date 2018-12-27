@@ -180,8 +180,25 @@ QGCView {
             }
 
             QGCComboBox {
-                id:             urulCombo
+                id:             txCombo
                 anchors.left:          pwRctrlCheckBox.right
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
+                width:                 manualBtn.width*1.2
+                anchors.bottom:         parent.bottom
+                model:          [qsTr("OMNI"), qsTr("DIRC")]
+
+                onActivated: {
+                    if (index != -1) {
+                        pD2dInforData.setClitxAntCtrl(index + 1);
+                        //clPWRctl
+                        pD2dInforData.sendCalibrationCmd(10);
+                    }
+                }
+            }
+
+            QGCComboBox {
+                id:             urulCombo
+                anchors.left:          txCombo.right
                 anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
                 width:                 manualBtn.width*1.2
                 anchors.bottom:         parent.bottom
@@ -213,9 +230,9 @@ QGCView {
             QGCButton {
                 id:                    calibrateButton
                 anchors.left:          urDlCombo.right
-                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
-                width:                 manualBtn.width*1.5
-                anchors.bottom:         parent.bottom
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
+                width:                 manualBtn.width*1.2
+                anchors.bottom:        parent.bottom
                 text:            qsTr("Calibrate")
                 onClicked:{
                     __isCalibrate = true;
@@ -241,9 +258,9 @@ QGCView {
 
             Rectangle{
                 id:                    showlabel
-                anchors.top:           manualBtn.top
-                anchors.right:         snrlabel.left
-                anchors.rightMargin:   ScreenTools.defaultFontPixelWidth*0.5
+                anchors.top:           calibrateButton.top
+                anchors.left:          calibrateButton.right
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
                 anchors.bottom:        parent.bottom
                 width:                 manualBtn.width
 
@@ -263,11 +280,11 @@ QGCView {
             //snr
             Rectangle{
                 id:                    snrlabel
-                anchors.top:           manualBtn.top
-                anchors.right:         labelRec.left
-                anchors.rightMargin:   ScreenTools.defaultFontPixelWidth*0.5
+                anchors.top:           calibrateButton.top
+                anchors.left:          showlabel.right
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
                 anchors.bottom:        parent.bottom
-                width:                 manualBtn.width
+                width:                 manualBtn.width*0.5
 
                 color:                 qgcPal.window
                 border.width:          1
@@ -285,9 +302,9 @@ QGCView {
 
             Rectangle{
                 id:                    labelRec
-                anchors.top:           manualBtn.top
-                anchors.right:         okButton.left
-                anchors.rightMargin:   ScreenTools.defaultFontPixelWidth*0.5
+                anchors.top:           calibrateButton.top
+                anchors.left:          snrlabel.right
+                anchors.leftMargin:    ScreenTools.defaultFontPixelWidth*0.5
                 anchors.bottom:        parent.bottom
                 width:                 manualBtn.width
                 color:                 qgcPal.window
@@ -435,6 +452,10 @@ QGCView {
                         {
                             return;
                         }
+                        else if(qgcCmd.indexOf("QGCTXANTCTRL:0") != -1)
+                        {
+                            return;
+                        }
                         svrMessageDialog.text = qsTr(" succeed.");
                         svrMessageDialog.open();
                     }
@@ -496,6 +517,11 @@ QGCView {
                         if(qgcCmd.indexOf("QGCTXPWRCTRL") != -1)
                         {
                             pwRctrlCheckBox.checked = !pwRctrlCheckBox.checked;
+                        }
+                        else if(qgcCmd.indexOf("QGCTXANTCTRL") != -1)
+                        {
+                            pD2dInforData.setClitxAntCtrl(0);
+                            pD2dInforData.sendCalibrationCmd(10);
                         }
                         svrMessageDialog.text = qsTr(" failed.");
                         svrMessageDialog.open();
@@ -656,6 +682,13 @@ QGCView {
                 }
             }
 
+            Connections{
+                target: pD2dInforData
+                onTxAntCtrlSingle:{
+                    urDlCombo.currentIndex = index - 1;
+                }
+            }
+
             MessageDialog {
                 id: svrMessageDialog
                 icon: StandardIcon.Warning
@@ -676,6 +709,10 @@ QGCView {
               //clPWRctl
               pD2dInforData.setCliclPWRctl(2);
               pD2dInforData.sendCalibrationCmd(9);
+
+              //QGCTXANTCTRL
+              pD2dInforData.setClitxAntCtrl(0);
+              pD2dInforData.sendCalibrationCmd(10);
             }
         }
     } // QGCViewPanel

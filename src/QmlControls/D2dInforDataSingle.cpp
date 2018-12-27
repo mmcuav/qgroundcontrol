@@ -29,6 +29,7 @@ D2dInforDataSingle::D2dInforDataSingle(QObject *parent) : QObject(parent)
     isCalibrateFlag = false;
     whichCalibrateFromFlag = false;
     clPWRctl = 2;
+    txAntCtrl = 0;
 
     localServer = new QLocalServer(this);
     connect(localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
@@ -186,6 +187,16 @@ void D2dInforDataSingle::dataReceived()
            if((index == 0) || (index == 1))
            {
                emit clPWRctlSingle(index);
+           }
+       }
+       else if (vTemp.contains(D2D_TX_ANT_BITMAP_TAG))
+       {
+           QStringList tempList = vTemp.split(' ');
+           QString temp = tempList.at(1);
+           int index = temp.toInt();
+           if((index == 2) || (index == 1))
+           {
+               emit txAntCtrlSingle(index);
            }
        }
        else
@@ -642,6 +653,11 @@ void D2dInforDataSingle::setCliclPWRctl(int value)
     clPWRctl = value;
 }
 
+void D2dInforDataSingle::setClitxAntCtrl(int value)
+{
+    txAntCtrl = value;
+}
+
 QString D2dInforDataSingle::getDataColorStr(int value)
 {
     if(value < -5)
@@ -681,6 +697,8 @@ void D2dInforDataSingle::sendCalibrationCmd(int index)
 
     //9                                                 #define QGC_TX_POWER_CTRL_TAG
 
+    //10                                                 #define QGC_TX_ANTENNA_CTRL_TAG
+
     if(index == 0){
         sendCalibrationCmdStr = QGC_QUERY_HOPPING_STATE_TAG;
     }
@@ -719,6 +737,10 @@ void D2dInforDataSingle::sendCalibrationCmd(int index)
     else if(index == 9){
         sendCalibrationCmdStr = QGC_TX_POWER_CTRL_TAG;
         sendCalibrationCmdStr = sendCalibrationCmdStr + ":" + QString::number(clPWRctl);
+    }
+    else if(index == 10){
+        sendCalibrationCmdStr = QGC_TX_ANTENNA_CTRL_TAG;
+        sendCalibrationCmdStr = sendCalibrationCmdStr + ":" + QString::number(txAntCtrl);
     }
     else{
         return;
