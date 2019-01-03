@@ -165,25 +165,6 @@ SetupPage {
             } // Component - axisMonitorDisplayComponent
 
             // Main view Qml starts here
-            Row {
-                id:         keySettingRow
-                visible:    false
-                Loader {
-                    id:     keySettingLoader
-                }
-                QGCButton {
-                    id:     backButton
-                    text:   qsTr("Joystick settings")
-
-                    onClicked: {
-                        keySettingLoader.source = ""
-                        keySettingRow.visible = false;
-                        channelMonitorLoader.sourceComponent = channelMonitor;
-                        leftColumn.visible = true;
-                        rightColumn.visible = true;
-                    }
-                }
-            }
             // Left side column
             Column {
                 id:                     leftColumn
@@ -898,11 +879,7 @@ SetupPage {
                     id:        keySettings
                     text:      qsTr("Extra channel settings")
                     onClicked: {
-                        keySettingLoader.source = "QGroundControl/Controls/KeyConfiguration.qml"
-                        keySettingRow.visible = true;
-                        channelMonitorLoader.sourceComponent = null;
-                        leftColumn.visible = false;
-                        rightColumn.visible = false;
+                        joystickPage.pageComponent = keySettingComponent;
                     }
                 }
 
@@ -955,6 +932,32 @@ SetupPage {
             } // Column - Right Column
         } // Item
     } // Component - pageComponent
+
+    Component {
+        id: keySettingComponent
+
+        Item {
+            width:  availableWidth
+            height: joystickPage.height
+
+            Row {
+                id:         keySettingRow
+                visible:    true
+                Loader {
+                    id:     keySettingLoader
+                    source: "QGroundControl/Controls/KeyConfiguration.qml"
+                }
+                QGCButton {
+                    id:     backButton
+                    text:   qsTr("Joystick settings")
+
+                    onClicked: {
+                        joystickPage.pageComponent = pageComponent;
+                    }
+                }
+            }
+        }
+    } // Component - keySettingComponent
 } // SetupPage
 
 

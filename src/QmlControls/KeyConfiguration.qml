@@ -50,6 +50,7 @@ QGCView {
     QGCViewPanel {
         id:             panel
         anchors.fill:   parent
+        anchors.topMargin:  100
         Rectangle {
             id:              centreWindow
             anchors.fill:    parent
@@ -145,10 +146,12 @@ QGCView {
                         _inUseChannelID = _keyConfiguration.channelOnKey(_keyIndexes[i], 0);
 
                         if(_inUseSbusID !== 0 && _inUseSbusID !== _sbusID) {
+                            multiKeyLayoutLoader.item.enabled = false;
                             messageDialogTimer.start();
                             return;
                         }
                         if(_inUseChannelID !== 0 && _inUseChannelID !== _channelID) {
+                            multiKeyLayoutLoader.item.enabled = false;
                             messageDialogTimer.start();
                             return;
                         }
@@ -196,7 +199,6 @@ QGCView {
                 id:             mainlayout
                 anchors.fill:   parent
                 anchors.leftMargin: 20
-                anchors.topMargin:  100
                 spacing: 10
 
                 Row {
@@ -279,11 +281,11 @@ QGCView {
                     }
 
                     Rectangle {
-                        height: 1100
-                        width: 1500
+                        anchors.bottom:     parent.bottom
+                        width: availableWidth - 20 - ScreenTools.defaultFontPixelWidth*2
                         QGCFlickable {
-                            height: 1100
-                            width: 1500
+                            height: 500
+                            width: parent.width
                             visible: true
                             clip:               true
                             contentHeight: channelSetColumn.height
@@ -366,7 +368,6 @@ QGCView {
                 id:                 singleKeyLayout
                 anchors.fill:       parent
                 anchors.leftMargin: 20
-                anchors.topMargin:  100
                 spacing:            80
                 Row{
                     id:      singleKeyRow1
@@ -514,90 +515,107 @@ QGCView {
             }
             Component {
                 id: multiKeySetting
-                Column{
-                    id:                 multiKeyLayout
-                    anchors.fill:       parent
-                    anchors.leftMargin: 20
-                    anchors.topMargin:  100
-                    spacing:            30
-                    Repeater {
-                        id:    multiKeyRepeater
-                        model: _keyCount
 
-                        Row{
-                            id:      multiKeyRow
-                            spacing: 100
-                            QGCLabel {
-                                id:                  multiKeyLabe
-                                anchors.top:         parent.top
-                                anchors.topMargin:   _gap
-                                width:               40
-                                text:                qsTr("CH" + _channelID)
-                            }
-                            QGCComboBox {
-                                id:         multiKeyRowCombox
-                                model:      _keyConfiguration.availableKeys
-                                width:      300
-                                currentIndex: _keyIndexes[modelData]
+                Item {
+                    id: multiKeySettingItem
+                    Column {
+                        anchors.fill:       parent
+                        Rectangle {
+                            width:  availableWidth
+                            height: 700
+                            QGCFlickable {
+                                anchors.fill: parent
+                                visible:      true
+                                clip:         true
+                                contentHeight: multiKeyLayout.height
+                                contentWidth: parent.width
+                                Column {
+                                    id:                 multiKeyLayout
+                                    anchors.leftMargin: 20
+                                    anchors.topMargin:  10
+                                    spacing:            30
+                                    Repeater {
+                                        id:    multiKeyRepeater
+                                        model: _keyCount
 
-                                onActivated: _keyIndexes[modelData] = index
-                            }
-                            QGCLabel {
-                                id:                  multiKeyRowLabel
-                                anchors.top:         parent.top
-                                anchors.topMargin:   _gap
-                                width:               40
-                                text:                _sliderValues[modelData]
-                            }
-                            QGCSlider {
-                                id:                  multiKeyRowSlider
-                                orientation:         Qt.Horizontal
-                                minimumValue:        _keyConfiguration.sbusEnable ? _minSbusValue : _minPPMValue;
-                                maximumValue:        _keyConfiguration.sbusEnable ? _maxSbusValue : _maxPPMValue;
-                                stepSize:            1
-                                width:               800
-                                value:               _sliderValues[modelData]
+                                        Row{
+                                            id:      multiKeyRow
+                                            spacing: 100
+                                            QGCLabel {
+                                                id:                  multiKeyLabe
+                                                anchors.top:         parent.top
+                                                anchors.topMargin:   _gap
+                                                width:               40
+                                                text:                qsTr("CH" + _channelID)
+                                            }
+                                            QGCComboBox {
+                                                id:         multiKeyRowCombox
+                                                model:      _keyConfiguration.availableKeys
+                                                width:      300
+                                                currentIndex: _keyIndexes[modelData]
 
-                                onValueChanged: {
-                                    multiKeyRowLabel.text = multiKeyRowSlider.value;
-                                    _sliderValues[modelData] = multiKeyRowSlider.value;
+                                                onActivated: _keyIndexes[modelData] = index
+                                            }
+                                            QGCLabel {
+                                                id:                  multiKeyRowLabel
+                                                anchors.top:         parent.top
+                                                anchors.topMargin:   _gap
+                                                width:               40
+                                                text:                _sliderValues[modelData]
+                                            }
+                                            QGCSlider {
+                                                id:                  multiKeyRowSlider
+                                                orientation:         Qt.Horizontal
+                                                minimumValue:        _keyConfiguration.sbusEnable ? _minSbusValue : _minPPMValue;
+                                                maximumValue:        _keyConfiguration.sbusEnable ? _maxSbusValue : _maxPPMValue;
+                                                stepSize:            1
+                                                width:               800
+                                                value:               _sliderValues[modelData]
+
+                                                onValueChanged: {
+                                                    multiKeyRowLabel.text = multiKeyRowSlider.value;
+                                                    _sliderValues[modelData] = multiKeyRowSlider.value;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Row{
+                                        spacing: 200
+                                        QGCLabel {
+                                            text:       qsTr(" ")
+                                            width:      40
+                                        }
+
+                                        QGCButton {
+                                            id:        mulSaveButton
+                                            text:      qsTr("Save")
+                                            onClicked: {
+                                                centreWindow.saveChannelKeySetting();
+                                            }
+                                        }
+                                        QGCButton {
+                                            id:        mulResetButton
+                                            text:      qsTr("Reset")
+                                            onClicked: {
+                                                channelResetDialog.open();
+                                            }
+                                        }
+                                        QGCButton {
+                                            id:        mulCancelButton
+                                            text:      qsTr("Cancel")
+                                            onClicked: {
+                                                multiKeyLayoutLoader.visible = false;
+                                                multiKeyLayoutLoader.sourceComponent = null;
+                                                mainlayout.visible = true;
+                                            }
+                                        }
+                                    }
                                 }
-                            }
+                            }//QGCFlickable
                         }
-                    }
-                    Row{
-                        spacing: 200
-                        QGCLabel {
-                            text:       qsTr(" ")
-                            width:      40
-                        }
-
-                        QGCButton {
-                            id:        mulSaveButton
-                            text:      qsTr("Save")
-                            onClicked: {
-                                centreWindow.saveChannelKeySetting();
-                            }
-                        }
-                        QGCButton {
-                            id:        mulResetButton
-                            text:      qsTr("Reset")
-                            onClicked: {
-                                channelResetDialog.open();
-                            }
-                        }
-                        QGCButton {
-                            id:        mulCancelButton
-                            text:      qsTr("Cancel")
-                            onClicked: {
-                                multiKeyLayoutLoader.visible = false;
-                                multiKeyLayoutLoader.sourceComponent = null;
-                                mainlayout.visible = true;
-                            }
-                        }
-                    }
+                    }//Column
                 }
-            }
+            }//Component
 
             Component.onCompleted: {
                 mainlayout.visible = true;
@@ -616,7 +634,10 @@ QGCView {
                 onYes: {
                     _keyConfiguration.resetKeySetting(_inUseSbusID, _inUseChannelID);
                     centreWindow.saveChannelKeySetting();
-                 }
+                }
+                onNo: {
+                    multiKeyLayoutLoader.item.enabled = true;
+                }
             }
             Timer {
                 id: messageDialogTimer
