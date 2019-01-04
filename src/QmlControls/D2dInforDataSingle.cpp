@@ -80,7 +80,8 @@ void D2dInforDataSingle::dataReceived()
     {
        QTextStream stream(socket);
        vTemp = stream.readAll();
-       //qCritical() << "D2dInforDataSingle localServer dataReceived:" << vTemp;
+
+       qCritical() << "D2dInforDataSingle localServer dataReceived:" << vTemp;
 
        if (vTemp.contains(D2D_UL_DATA_RATE_TAG))//D2D_UL_DATA_RATE_TAG  //
        {
@@ -102,6 +103,9 @@ void D2dInforDataSingle::dataReceived()
        {
            QStringList tempList = vTemp.split(' ');
            QString temp = tempList.at(1);
+
+           qCritical() << "D2dInforDataSingle D2D_DOWNLINK_BANDWIDTH_CONFIG_TAG :" << temp;
+
            int index = temp.toInt();
            emit downlinkCFG(index);
        }
@@ -747,6 +751,8 @@ void D2dInforDataSingle::sendCalibrationCmd(int index)
     }
 
     sendCmdStr = sendCalibrationCmdStr;
+
+    qCritical() << "D2dInforDataSingle sendCalibrationCmd sendCmdStr:" << sendCmdStr;
 
     localSocket->connectToServer(SERVER_NAME_D2D_INFO);
     if (!localSocket->waitForConnected())

@@ -685,7 +685,7 @@ QGCView {
             Connections{
                 target: pD2dInforData
                 onTxAntCtrlSingle:{
-                    urDlCombo.currentIndex = index - 1;
+                    txCombo.currentIndex = index - 1;
                 }
             }
 
