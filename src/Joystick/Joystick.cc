@@ -587,6 +587,9 @@ void Joystick::startPolling(Vehicle* vehicle)
         }
         // Update qml in case of joystick transition
         emit calibratedChanged(_calibrated);
+
+        if (_joystickManager->joystickEnabled())
+        _pollingStartedForCalibration = false;
     }
 
 
