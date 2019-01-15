@@ -601,6 +601,7 @@ HEADERS += \
 AndroidBuild {
 HEADERS += \
     src/Joystick/JoystickAndroid.h \
+    src/Joystick/InputEventReader.h \
     src/AndroidInterface.h \
     src/AndroidController.h \
 }
@@ -687,6 +688,7 @@ iOSBuild {
 AndroidBuild {
     SOURCES += src/MobileScreenMgr.cc \
     src/Joystick/JoystickAndroid.cc \
+    src/Joystick/InputEventReader.cc \
     src/AndroidInterface.cc \
     src/AndroidController.cc \
 }
