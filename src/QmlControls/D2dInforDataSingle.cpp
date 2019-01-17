@@ -88,7 +88,6 @@ void D2dInforDataSingle::dataReceived()
            QStringList tempList = vTemp.split(' ');
            UlRateStr = tempList.at(1);
 
-           //qCritical() << "D2dInforDataSingle localServer D2D_UL_DATA_RATE_TAG:" << UlRateStr;
            emit signalUpRate();
        }
        else if (vTemp.contains(D2D_UPLINK_BANDWIDTH_CONFIG_TAG))
@@ -104,19 +103,16 @@ void D2dInforDataSingle::dataReceived()
            QStringList tempList = vTemp.split(' ');
            QString temp = tempList.at(1);
 
-           qCritical() << "D2dInforDataSingle D2D_DOWNLINK_BANDWIDTH_CONFIG_TAG :" << temp;
 
            int index = temp.toInt();
            emit downlinkCFG(index);
        }
        else if(vTemp.contains(D2D_SNR_LIST_UPDATED_TAG)) //updata
        {
-           //qCritical() << "D2dInforDataSingle dataReceived D2D_SNR_LIST_UPDATED_TAG.";
            getList();
        }
        else if (vTemp.contains(D2D_FREQ_LIST_RECEIVED_TAG))//
        {
-           qCritical() << "D2dInforDataSingle dataReceived D2D_FREQ_LIST_RECEIVED_TAG.";
            sendCalibrationCmd(8);
            if(whichCalibrateFromFlag)
            {
@@ -125,8 +121,6 @@ void D2dInforDataSingle::dataReceived()
        }
        else if (vTemp.contains(QGC_CMD_SUCCESS_TAG)) //receive
        {
-           qCritical() << "D2dInforDataSingle dataReceived:" << sendCmdStr << " QGC_CMD_SUCCESS_TAG.";
-
            if(sendCmdStr == "QGCFREQNEG")
            {
                return;
@@ -142,8 +136,6 @@ void D2dInforDataSingle::dataReceived()
        }
        else if (vTemp.contains(QGC_CMD_FAIL_TAG)) //receive
        {
-           qCritical() << "D2dInforDataSingle dataReceived:" << sendCmdStr << " QGC_CMD_FAIL_TAG.";
-
            if(whichCalibrateFromFlag)
            {
                emit maintoolbarCalibrateFalied();
@@ -529,6 +521,10 @@ void D2dInforDataSingle::setCliUlDlValue(int value,int type)
         qCritical() << "D2dInforDataSingle SetCliUlDlValue type is error.";
         return;
     }
+
+    sendCmdStr = sendCalibrationCmdStr;
+
+    qCritical() << "D2dInforDataSingle setCliUlDlValue sendCmdStr:" << sendCmdStr;
 
     localSocket->connectToServer(SERVER_NAME_D2D_INFO);
     if (!localSocket->waitForConnected())
