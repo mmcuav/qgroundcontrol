@@ -11,6 +11,7 @@
 #define VideoSettings_H
 
 #include "SettingsGroup.h"
+#include "WifiSettings.h"
 
 class VideoSettings : public SettingsGroup
 {
@@ -35,6 +36,8 @@ public:
     Q_PROPERTY(Fact* videoResolution        READ videoResolution        CONSTANT)
     Q_PROPERTY(Fact* cameraId               READ cameraId               CONSTANT)
     Q_PROPERTY(bool  streamConfigured       READ streamConfigured       NOTIFY streamConfiguredChanged)
+    Q_PROPERTY(Fact* videoShareEnable       READ videoShareEnable       CONSTANT)
+    Q_PROPERTY(WifiSettings* videoShareSettings  READ videoShareSettings     CONSTANT)
 
     Fact* videoSource           (void);
     Fact* udpPort               (void);
@@ -52,6 +55,9 @@ public:
     Fact* videoResolution       (void);
     Fact* cameraId              (void);
     bool  streamConfigured      (void);
+    Fact* videoShareEnable      (void);
+    Q_INVOKABLE bool setVideoShareEnabled(bool enabled);
+    WifiSettings* videoShareSettings(void) { return _videoShareSettings; }
 
     static const char* videoSettingsGroupName;
 
@@ -70,6 +76,7 @@ public:
     static const char* disableWhenDisarmedName;
     static const char* videoResolutionName;
     static const char* cameraIdName;
+    static const char* videoShareEnableName;
 
     static const char* videoSourceNoVideo;
     static const char* videoDisabled;
@@ -100,6 +107,8 @@ private:
     SettingsFact* _disableWhenDisarmedFact;
     SettingsFact* _videoResolutionFact;
     SettingsFact* _cameraIdFact;
+    SettingsFact* _videoShareEnableFact;
+    WifiSettings* _videoShareSettings;
 };
 
 #endif

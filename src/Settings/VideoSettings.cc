@@ -13,6 +13,11 @@
 #include <QtQml>
 #include <QVariantList>
 
+#ifdef __android__
+#include <QtAndroidExtras/QAndroidJniObject>
+#define VIDEO_SHARE_PROP_NAME "persist.fpv.ext.disp"
+#endif
+
 #ifndef QGC_DISABLE_UVC
 #include <QCameraInfo>
 #endif
@@ -34,6 +39,7 @@ const char* VideoSettings::streamEnabledName =      "StreamEnabled";
 const char* VideoSettings::disableWhenDisarmedName ="DisableWhenDisarmed";
 const char* VideoSettings::videoResolutionName =    "VideoResolution";
 const char* VideoSettings::cameraIdName =           "cameraId";
+const char* VideoSettings::videoShareEnableName =   "VideoShareEnable";
 
 const char* VideoSettings::videoSourceNoVideo =     "No Video Available";
 const char* VideoSettings::videoDisabled =          "Video Stream Disabled";
@@ -59,6 +65,8 @@ VideoSettings::VideoSettings(QObject* parent)
     , _disableWhenDisarmedFact(NULL)
     , _videoResolutionFact(NULL)
     , _cameraIdFact(NULL)
+    , _videoShareEnableFact(NULL)
+    , _videoShareSettings(NULL)
 {
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     qmlRegisterUncreatableType<VideoSettings>("QGroundControl.SettingsManager", 1, 0, "VideoSettings", "Reference only");
@@ -98,6 +106,8 @@ VideoSettings::VideoSettings(QObject* parent)
     } else {
         _nameToMetaDataMap[videoSourceName]->setRawDefaultValue(videoSourceAuto);
     }
+
+    _videoShareSettings = new WifiSettings();
 }
 
 Fact* VideoSettings::videoSource(void)
@@ -251,7 +261,50 @@ bool VideoSettings::streamConfigured(void)
     return false;
 }
 
+Fact* VideoSettings::videoShareEnable(void)
+{
+    if (!_videoShareEnableFact) {
+        _videoShareEnableFact = _createSettingsFact(videoShareEnableName);
+
+#ifdef __android__
+        //Set video share state by property
+        QAndroidJniObject prop = QAndroidJniObject::fromString(VIDEO_SHARE_PROP_NAME);
+        QAndroidJniObject defaultValue = QAndroidJniObject::fromString("0");
+        QAndroidJniObject value = QAndroidJniObject::callStaticObjectMethod("android/os/SystemProperties", "get",
+                                    "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", prop.object<jstring>(), defaultValue.object<jstring>());
+        _videoShareEnableFact->setRawValue(value.toString().toInt());
+#endif
+    }
+    return _videoShareEnableFact;
+}
+
+/*
+ *set android property persist.fpv.ext.disp
+ */
+bool VideoSettings::setVideoShareEnabled(bool enabled)
+{
+#ifdef __android__
+    if(!_videoShareSettings->setVideoShareApEnabled(enabled)) {
+        qWarning() << "Open wifi AP hotspot failed.";
+        return false;
+    }
+
+    QAndroidJniObject prop = QAndroidJniObject::fromString(VIDEO_SHARE_PROP_NAME);
+    QAndroidJniObject value;
+    if(enabled) {
+        value = QAndroidJniObject::fromString("1");
+    } else {
+        value = QAndroidJniObject::fromString("0");
+    }
+    QAndroidJniObject::callStaticObjectMethod("android/os/SystemProperties", "set", "(Ljava/lang/String;Ljava/lang/String;)V",
+                                                                                prop.object<jstring>(), value.object<jstring>());
+    qDebug() << "Andoid property" << prop.toString() << "is be set to" << value.toString();
+#endif
+    return true;
+}
+
 void VideoSettings::_configChanged(QVariant)
 {
     emit streamConfiguredChanged();
 }
+
