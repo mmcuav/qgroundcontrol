@@ -164,11 +164,6 @@ bool JoystickAndroid::handleKeyEvent(jobject event) {
     QJNIObjectPrivate ev(event);
     QMutexLocker lock(&m_mutex);
 
-    if(!listenFromAndroid) {
-        //listen input event from inner thread, ignore android event here
-        return true;
-    }
-
     const int _deviceId = ev.callMethod<jint>("getDeviceId", "()I");
     if (_deviceId!=deviceId) {
         const int ac = ev.callMethod<jint>("getAction", "()I");
@@ -267,6 +262,10 @@ bool JoystickAndroid::handleKeyEventInner(int keycode, int action) {
     if(keyIndex < 0) {
         qDebug() << "unsupport key "<< keycode << ", don't proccess here";
         return false;
+    }
+    if(!listenFromAndroid) {
+        //listen input event from inner thread, ignore android event here
+        return true;
     }
 
     if(action == ACTION_DOWN) {
