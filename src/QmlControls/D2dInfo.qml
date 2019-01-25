@@ -44,6 +44,8 @@ QGCView {
 
     property string qgcCmd
 
+    property string intTostringValue
+
     QGCPalette { id: qgcPal; colorGroupEnabled: panel.enabled }
 
     QGCViewPanel {
@@ -332,6 +334,15 @@ QGCView {
                     {
                         //check value is right
                         __setValue = parseInt(manualSetValue.text);
+                        intTostringValue = __setValue;
+                        if((intTostringValue === "nan")||(intTostringValue === "NaN"))
+                        {
+                            svrMessageDialog.text = "Illegal characters entered, please check before entering !";
+                            svrMessageDialog.open();
+                            okButton.checked = false;
+                            return;
+                        }
+
                         if(urDlCombo.currentIndex == 0)
                         {
                             if(__setValue < 47050 || __setValue  > 47785)
