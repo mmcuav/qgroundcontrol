@@ -12,6 +12,8 @@
 #include "QGCLoggingCategory.h"
 #include "Joystick.h"
 
+#include "MMC/MMCKeys/mmckeys.h"
+
 class JoystickManager;
 class UDPLink;
 
@@ -34,13 +36,18 @@ public:
     int channelCount();
     QVariantList sbusChannelStatus();
 
+
+    void setMMCKey(int id, bool key);
 signals:
     void sbusChannelStatusChanged();
+    void setMMCKeySignals(int id, bool key);
 
 private slots:
     void _handleManualControl(float roll, float pitch, float yaw, float thrust, float wheel, quint16 buttons, int joystickMode);
     void _activeJoystickChanged(Joystick* joystick);
     void _setupJoystickLink();
+
+    void _setMMCKey(int id, bool key);
 
 private:
     Joystick* _activeJoystick;
@@ -53,4 +60,6 @@ private:
     int _channelCount;
     static uint16_t _sbus0ChannelValues[12];//sbus0
     static uint16_t _sbus1ChannelValues[16];//sbus1
+
+    KeysManager* _keyManager = nullptr;
 };

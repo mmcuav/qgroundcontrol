@@ -13,6 +13,7 @@
 #include "UDPLink.h"
 #include "JoystickMessageSender.h"
 #include "KeyConfiguration.h"
+#include "MMC/MMCMount/mmcmount.h"
 
 QGC_LOGGING_CATEGORY(JoystickMessageSenderLog, "JoystickMessageSenderLog")
 
@@ -31,6 +32,11 @@ JoystickMessageSender::JoystickMessageSender(JoystickManager* joystickManager)
     , _channelCount(16)
 {
     connect(joystickManager, &JoystickManager::activeJoystickChanged, this, &JoystickMessageSender::_activeJoystickChanged);
+
+    if(!_keyManager){
+        _keyManager = new KeysManager(this);
+        connect(this, SIGNAL(setMMCKeySignals(int,bool)), this, SLOT(_setMMCKey(int,bool)));
+    }
 }
 
 JoystickMessageSender::~JoystickMessageSender()
@@ -56,6 +62,14 @@ void JoystickMessageSender::_setupJoystickLink()
     // use Mavlink 2.0
     mavlink_status_t* mavlinkStatus = mavlink_get_channel_status(_mavlinkChannel);
     mavlinkStatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+}
+
+void JoystickMessageSender::_setMMCKey(int id, bool key)
+{
+    if(_keyManager){
+        qDebug() << "-----------------------setMMCKey" << id << key;
+        _keyManager->setKey(id, key);
+    }
 }
 
 void JoystickMessageSender::_handleManualControl(float roll, float pitch, float yaw, float thrust, float wheel, quint16 buttons, int joystickMode)
@@ -117,6 +131,30 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     const float ch3 = (yaw+1) * axesScaling;
     const float ch4 = thrust * axesScaling;
 
+    /* kong pitch */
+    if(manualThrust * axesScaling != 0) qDebug() << "-----------------------------handleManualControl" <<  manualThrust * axesScaling;
+    if(qgcApp()->toolbox()->multiVehicleManager()->activeVehicleAvailable() &&  !qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->mountLost()){
+        MountInfo* mount = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->currentMount();
+        if(mount->mountType() == 0) {
+            CameraMount* cameraMount = (CameraMount*)mount;
+            static int zoom = 1;
+            if(manualThrust * axesScaling > 200){
+                zoom = 2;
+                cameraMount->controlZoom(zoom);
+//                    cameraMount->controlPitch(5, true);
+            }else if(manualThrust * axesScaling < -200){
+                zoom = 0;
+                cameraMount->controlZoom(zoom);
+//                    cameraMount->controlPitch(5, false);
+            }else{
+                if(zoom != 1){
+                    zoom = 1;
+                    cameraMount->controlZoom(zoom);
+                }
+            }
+        }
+    }
+
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     mavlink_message_t message;
     MAVLinkProtocol* mavlink = qgcApp()->toolbox()->mavlinkProtocol();
@@ -150,7 +188,7 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
                                  0, 0, 255);
 
     len = mavlink_msg_to_send_buffer(buffer, &message);
-    _udpLink->writeBytesSafe((const char*)buffer, len);
+    _udpLink->writeBytesSafe((const char*)buffer, len); 
 }
 
 void JoystickMessageSender::_activeJoystickChanged(Joystick* joystick)
@@ -191,6 +229,11 @@ QVariantList JoystickMessageSender::sbusChannelStatus()
         list += QVariant::fromValue(status);
     }
     return list;
+}
+
+void JoystickMessageSender::setMMCKey(int id, bool key)
+{
+    emit setMMCKeySignals(id, key);
 }
 
 int JoystickMessageSender::getChannelValue(int sbus, int ch)

@@ -220,6 +220,9 @@ bool JoystickAndroid::handleKeyEventInner(int keycode, int action) {
         return false;
     }
 
+    /* pai zhao -- lu xiang */
+    setMMCKey(keyIndex, action==0);
+
     if(action == ACTION_DOWN) {
         if(!_keyEvents[keyIndex].isPressed) {
             _keyEvents[keyIndex].startTime = current_time;
@@ -278,6 +281,11 @@ bool JoystickAndroid::getChannelValue(int keyCode, KeyConfiguration::KeyAction_t
         qDebug() << "keyCode = " << keyCode << " sbus = " << *sbus << " ch = " << *ch << " value = " << *value;
     }
     return ret;
+}
+
+void JoystickAndroid::setMMCKey(int key, bool action)
+{
+    qgcApp()->toolbox()->joystickManager()->joystickMessageSender()->setMMCKey(key, action);
 }
 
 //helper method

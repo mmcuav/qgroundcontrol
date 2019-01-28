@@ -12,7 +12,6 @@
 #include <QtAndroidExtras/QtAndroidExtras>
 #include <QtAndroidExtras/QAndroidJniObject>
 
-
 class JoystickAndroid : public Joystick, public QtAndroidPrivate::GenericMotionEventListener, public QtAndroidPrivate::KeyEventListener
 {
 public:
@@ -36,6 +35,8 @@ private:
     int getKeyIndexByCode(int code);
     void sendChannelValue(int sbus, int ch, int value);
     bool getChannelValue(int keyCode, KeyConfiguration::KeyAction_t action, int *sbus, int *ch, int *value);
+
+    void setMMCKey(int key, bool action);
 
     int *btnCode;
     int *axisCode;
