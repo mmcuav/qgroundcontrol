@@ -21,6 +21,7 @@
 #include "UASMessageHandler.h"
 #include "SettingsFact.h"
 
+#include "MMC/MMCMount/mountinfo.h"
 class UAS;
 class UASInterface;
 class FirmwarePlugin;
@@ -35,6 +36,7 @@ class UASMessage;
 class SettingsManager;
 class ADSBVehicle;
 class QGCCameraManager;
+class MountInfo;
 
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
@@ -358,6 +360,11 @@ public:
     Q_PROPERTY(bool                 vtolInFwdFlight         READ vtolInFwdFlight        WRITE setVtolInFwdFlight        NOTIFY vtolInFwdFlightChanged)
     Q_PROPERTY(bool                 highLatencyLink         READ highLatencyLink                                        NOTIFY highLatencyLinkChanged)
 
+    /* MMC Mount */
+    Q_PROPERTY(MountInfo*           currentMount            READ currentMount                                           NOTIFY currentMountChanged)
+    Q_PROPERTY(bool                 mountLost               READ mountLost                                              NOTIFY mountLostChanged)
+
+
     // Vehicle state used for guided control
     Q_PROPERTY(bool flying                  READ flying NOTIFY flyingChanged)                               ///< Vehicle is flying
     Q_PROPERTY(bool landing                 READ landing NOTIFY landingChanged)                             ///< Vehicle is in landing pattern (DO_LAND_START)
@@ -648,6 +655,10 @@ public:
     /// @return the maximum version
     unsigned        maxProtoVersion         () const { return _maxProtoVersion; }
 
+    /* MMC Mount */
+    bool            currentMount         () const { return _currentMount; }
+    bool            mountLost            () const { return _mountLost; }
+
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }
     Fact* pitch             (void) { return &_pitchFact; }
@@ -759,6 +770,13 @@ public:
     /// Vehicle is about to be deleted
     void prepareDelete();
 
+    //拍照
+    Q_INVOKABLE void doCameraTrigger();
+
+    /// mount
+    MountInfo*  currentMount(){ return _currentMount; }
+    bool        mountLost(){ return _mountLost; }
+
 signals:
     void allLinksInactive(Vehicle* vehicle);
     void coordinateChanged(QGeoCoordinate coordinate);
@@ -793,6 +811,9 @@ signals:
     void capabilityBitsChanged(uint64_t capabilityBits);
     void toolBarIndicatorsChanged(void);
     void highLatencyLinkChanged(bool highLatencyLink);
+
+    void currentMountChanged();
+    void mountLostChanged();
 
     void messagesReceivedChanged    ();
     void messagesSentChanged        ();
@@ -890,6 +911,7 @@ private slots:
     void _updateDistanceToHome(void);
     void _updateHobbsMeter(void);
     void _vehicleParamLoaded(bool ready);
+    void _onMountLost();
 
 private:
     bool _containsLink(LinkInterface* link);
@@ -927,6 +949,9 @@ private:
 #endif
     void _handleCameraImageCaptured(const mavlink_message_t& message);
     void _handleADSBVehicle(const mavlink_message_t& message);
+    void _handleCanPackets(const mavlink_message_t& message);
+    void handleMountInfo(const can_data &tmpdata);
+
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _geoFenceManagerError(int errorCode, const QString& errorMsg);
     void _rallyPointManagerError(int errorCode, const QString& errorMsg);
@@ -1152,5 +1177,11 @@ private:
     static const char* _settingsGroup;
     static const char* _joystickModeSettingsKey;
     static const char* _joystickEnabledSettingsKey;
+
+    // mount
+    MountInfo* _currentMount = nullptr;
+    bool _mountConnected = false;
+    bool _mountLost = true;
+    QTimer* _mountLostTimer = nullptr;
 
 };

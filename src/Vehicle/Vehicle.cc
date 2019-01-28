@@ -39,6 +39,8 @@
 #include "VideoReceiver.h"
 #include "VideoManager.h"
 
+#include "MMC/MMCMount/mmcmount.h"
+
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
 #define UPDATE_TIMER 50
@@ -257,6 +259,11 @@ Vehicle::Vehicle(LinkInterface*             link,
     // Create camera manager instance
     _cameras = _firmwarePlugin->createCameraManager(this);
     emit dynamicCamerasChanged();
+
+    _mountLostTimer = new QTimer();
+    _mountLostTimer->setInterval(10000);
+    _mountLostTimer->setSingleShot(true);
+    connect(_mountLostTimer, SIGNAL(timeout()), this, SLOT(_onMountLost()));
 }
 
 // Disconnected Vehicle for offline editing
@@ -435,6 +442,18 @@ void Vehicle::_commonInit(void)
 
     _flightDistanceFact.setRawValue(0);
     _flightTimeFact.setRawValue(0);
+
+
+    if(_currentMount == nullptr){
+        _currentMount = new CameraMount(this);
+        CameraMount* camMount = dynamic_cast<CameraMount*>(_currentMount);
+        camMount->setCam_type(CameraMount::CAM_SONGXIA20); //继承类要无效化此函数
+        _mountConnected = true;
+        _mountLost = false;
+
+        emit currentMountChanged();
+        emit mountLostChanged();
+    }
 }
 
 Vehicle::~Vehicle()
@@ -450,6 +469,8 @@ Vehicle::~Vehicle()
     delete _mav;
     _mav = NULL;
 
+    _onMountLost();
+
 }
 
 void Vehicle::prepareDelete()
@@ -460,6 +481,27 @@ void Vehicle::prepareDelete()
         emit dynamicCamerasChanged();
         qApp->processEvents();
     }
+}
+
+void Vehicle::doCameraTrigger()
+{
+    qDebug() << "-----doCameraTrigger" << _mavlink->getSystemId() << _mavlink->getComponentId() << id();
+    mavlink_message_t msg;
+    mavlink_msg_digicam_control_pack(_mavlink->getSystemId(),
+                                     _mavlink->getComponentId(),
+                                     &msg,
+                                     id(),
+                                     0,
+                                     0, //session
+                                     0, //zoom_pos
+                                     0, //zoom_step
+                                     0, //focus_lock
+                                     1, // shot
+                                     MAV_CMD_DO_DIGICAM_CONTROL, //command_id
+                                     0, //extra_param
+                                     0 //extra_value
+                                     );
+    sendMessageOnLink(priorityLink(),msg);
 }
 
 void Vehicle::_offlineFirmwareTypeSettingChanged(QVariant value)
@@ -689,6 +731,10 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
         _handleADSBVehicle(message);
         break;
+
+//    case MAVLINK_MSG_ID_CAN_PACKTS:  //Can
+//        _handleCanPackets(message);
+//        break;
 
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
     {
@@ -2935,6 +2981,135 @@ void Vehicle::_handleADSBVehicle(const mavlink_message_t& message)
     }
 }
 
+void Vehicle::_handleCanPackets(const mavlink_message_t &message)
+{
+    //qDebug() << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss zzz") << message.len;
+    if(!_parameterManager->parametersReady())
+        return;
+    mavlink_can_packts_t canpackets;
+    mavlink_msg_can_packts_decode(&message, &canpackets);
+
+    can_data tmpdata;
+    char* p = (char *)&tmpdata;
+    memcpy(p, &canpackets.buf[0], 11);
+    /*qDebug() << "------------canpackets" << tmpdata.can_id << tmpdata.pack_len << tmpdata.date[0]
+                << tmpdata.date[1] << tmpdata.date[2] << tmpdata.date[3]
+                << tmpdata.date[4] << tmpdata.date[5] << tmpdata.date[6] << tmpdata.date[7]
+                << QDateTime::currentDateTime().toString("hh:mm:ss.zzz");*/
+
+//    tmpdata.can_id = MountInfo::MOUNT_GASDETECTION;
+//    _wMoundCanId = tmpdata.can_id;
+//    qDebug() << "------------------" << _wMoundCanId;
+//   if(!_currentMount) qDebug() << "----_wMoundCanId NULL";
+//   else  qDebug()<< "----_wMoundCanId \n" << _wMoundCanId;
+
+    switch (tmpdata.can_id) {
+    case MountInfo::MOUNT_INDICATORLIGHT: //飞控指示灯
+        break;
+    case MountInfo::MOUNT_HYDROGNE: //氢燃料
+//        handleHydroneInfo(tmpdata);
+        break;
+    case MountInfo::MOUNT_FOC: //电调
+//        handleFocInfo(tmpdata);
+        break;
+    default: //挂载类
+        handleMountInfo(tmpdata);
+        break;
+    }
+}
+
+void Vehicle::handleMountInfo(const can_data &tmpdata)
+{
+    //    if(_mountConnected) return;  // test奔溃情况
+
+    //    static char sumber = 0;
+    //    qDebug() << "-------------------------------------------------handleMountInfo" << (int)(sumber++);
+
+        MountInfo* mount = nullptr;
+        if(!_mountConnected)
+        {
+            switch (tmpdata.can_id) {
+            //10倍云台
+            case CameraMount::CAM_Filr: //Filr红外
+                mount = new FilrCameraMount(this);
+                break;
+            case CameraMount::CAM_PG2IF1_LS1Z20: //高清双光 20b
+                mount = new PG2IF1CameraMount(this);
+                break;
+            case CameraMount::CAM_PGIY1: //海视英科红外
+                mount = new PGIY1CameraMount(this);
+                break;
+            case CameraMount::CAM_10:
+            case CameraMount::CAM_5100:
+            case CameraMount::CAM_SONGXIA20:
+            case CameraMount::CAM_SONY20:
+            case CameraMount::CAM_QIWA30:
+            case CameraMount::CAM_A7R:
+            case CameraMount::CAM_GOPRO5:
+            case CameraMount::CAM_BIFOCAL10:
+            case CameraMount::CAM_SMALLBIFOCAL:
+            case CameraMount::CAM_LLL18:
+            case CameraMount::CAM_LLLFLOW35:
+            case CameraMount::CAM_F1T2FOCAL:
+            case CameraMount::CAM_PG2IF2_LT2Z35:
+                if(!mount){
+                    mount = new CameraMount(this);
+                    CameraMount* camMount = dynamic_cast<CameraMount*>(mount);
+                    camMount->setCam_type(tmpdata.can_id); //继承类要无效化此函数
+                }
+                break;
+
+            case MountInfo::MOUNT_3DMAPPING: //倾斜摄影
+                mount = new Mapping3DMount(this);
+                break;
+            case MountInfo::MOUNT_4GSPEAKE: //4G喊话器
+                mount = new Speake4GMount(this);
+                break;
+
+            case MountInfo::MOUNT_SPEAKE: //喊话器
+                mount = new SpeakerMount(this);
+                break;
+            case MountInfo::MOUNT_DROP://抛投
+                mount = new DropMount(this);
+                break;
+            case MountInfo::MOUNT_GASDETECTION://毒气检测
+                mount = new GasMount(this);
+                break;
+            case MountInfo::MOUNT_LIGHT: //探照灯
+                mount = new LightMount(this);
+                break;
+            default: // 这一应该有个weizhi挂载类  --  通道控制
+                mount = new CustomMount(this);
+                break;
+            }
+        }
+
+        if(mount){
+            if(_currentMount){
+                qDebug() << "Mount Error ---->>>>> can_id" << tmpdata.can_id;
+                MountInfo* deleteMount = _currentMount;
+                _currentMount = mount;
+                deleteMount->deleteLater();
+            }
+            _currentMount = mount;
+            _mountConnected = true;
+            _mountLost = false;
+//            emit currentMountChanged();
+//            emit mountLostChanged();
+        }
+
+        if(_currentMount){
+            _currentMount->handleInfo(tmpdata);
+            _mountLostTimer->start();
+
+//            if(_wSrcSocket != NULL){    //发送给web
+//                QJsonObject dataJson;
+//                _currentMount->saveJson(dataJson);
+//                _webControl->messageToWeb(CMD_TYPE_GROUND2WEB,_wSrcSocket,dataJson);
+//            }
+        }
+}
+
 void Vehicle::_updateDistanceToHome(void)
 {
     if (coordinate().isValid() && homePosition().isValid()) {
@@ -2987,6 +3162,21 @@ void Vehicle::_vehicleParamLoaded(bool ready)
     //   way to update this?
     if(ready) {
         emit hobbsMeterChanged();
+    }
+}
+
+void Vehicle::_onMountLost()
+{
+    if(_mountConnected){
+        _mountConnected = false;
+        _mountLost = true;
+        if(_currentMount){
+            _currentMount->deleteLater();
+            delete _currentMount;
+            _currentMount = nullptr;
+        }
+//        emit mounLostChanged();
+//        emit currentMountChanged();
     }
 }
 
