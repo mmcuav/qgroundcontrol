@@ -1126,4 +1126,9 @@ contains (CONFIG, QGC_DISABLE_BUILD_SETUP) {
 
 include(QGCInstaller.pri)
 
-DISTFILES +=
+include(src/MMC/MMC.pri)
+
+DISTFILES += \
+    src/MMC/MMCMount/QML/qmldir
+
+
