@@ -28,6 +28,8 @@ import QGroundControl.Vehicle       1.0
 import QGroundControl.Controllers   1.0
 import QGroundControl.FactSystem    1.0
 
+//import QGroundControl.MMCMounts
+
 /// Flight Display View
 QGCView {
     id:             root
@@ -330,6 +332,12 @@ QGCView {
                 anchors.fill:   parent
                 visible:        !QGroundControl.videoManager.isGStreamer
                 source:         QGroundControl.videoManager.uvcEnabled ? "qrc:/qml/FlightDisplayViewUVC.qml" : "qrc:/qml/FlightDisplayViewDummy.qml"
+            }
+            //--MMC MOUNT
+            Loader {
+                anchors.fill:   parent
+                visible: !_mainIsMap && QGroundControl.videoManager.fullScreen
+                source: "qrc:/mmcmountqml/MountControlArea.qml"
             }
         }
 
