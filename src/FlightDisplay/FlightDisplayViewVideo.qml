@@ -102,7 +102,8 @@ Item {
         MouseArea {
             anchors.fill: parent
             onDoubleClicked: {
-//                QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+                if(!QGroundControl.videoManager.fullScreen)
+                    QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
             }
         }
     }
