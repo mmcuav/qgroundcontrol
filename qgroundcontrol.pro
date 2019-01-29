@@ -582,6 +582,7 @@ HEADERS += \
     src/Settings/UnitsSettings.h \
     src/Settings/VideoSettings.h \
     src/Settings/WifiSettings.h \
+    src/Settings/RfSettings.h \
     src/Terrain.h \
     src/Vehicle/MAVLinkLogManager.h \
     src/VehicleSetup/JoystickConfigController.h \
@@ -781,6 +782,7 @@ SOURCES += \
     src/Settings/UnitsSettings.cc \
     src/Settings/VideoSettings.cc \
     src/Settings/WifiSettings.cc \
+    src/Settings/RfSettings.cc \
     src/Terrain.cc \
     src/Vehicle/MAVLinkLogManager.cc \
     src/VehicleSetup/JoystickConfigController.cc \

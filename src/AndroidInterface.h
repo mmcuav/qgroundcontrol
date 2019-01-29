@@ -19,4 +19,7 @@ class AndroidInterface
 public:
     static void acquireScreenWakeLock();
     static void releaseScreenWakeLock();
+    static void showToast(int id);
+    static QString getSystemProperty(QString& prop_name, QString& defaultValue);
+    static void setSystemProperty(QString& prop_name, QString& value);
 };

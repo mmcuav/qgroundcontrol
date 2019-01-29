@@ -116,6 +116,49 @@ QGCView {
                 }
 
                 //-----------------------------------------------------------------
+                //-- RF authentication
+                Item {
+                    width:                      _panelWidth
+                    height:                     rfLabel.height
+                    anchors.margins:            ScreenTools.defaultFontPixelWidth
+                    anchors.horizontalCenter:   parent.horizontalCenter
+                    QGCLabel {
+                        id:             rfLabel
+                        text:           qsTr("RF authentication")
+                        font.family:    ScreenTools.demiboldFontFamily
+                    }
+                }
+                Rectangle {
+                    height:                     rfAuth.height + (ScreenTools.defaultFontPixelHeight * 2)
+                    width:                      _panelWidth
+                    color:                      qgcPal.windowShade
+                    anchors.margins:            ScreenTools.defaultFontPixelWidth
+                    anchors.horizontalCenter:   parent.horizontalCenter
+
+                    Column {
+                        id:         rfAuth
+                        spacing:    ScreenTools.defaultFontPixelWidth
+                        anchors.centerIn: parent
+
+                        Row {
+                            spacing:    ScreenTools.defaultFontPixelWidth
+                            QGCLabel {
+                                text:               qsTr("RF authentication:")
+                                width:              _labelWidth
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            FactComboBox {
+                                id:         rfAuthComboBox
+                                width:      _editFieldWidth
+                                indexModel: false
+                                fact:       QGroundControl.settingsManager.rfSettings.rfAuthentication
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                    }
+                } // RF authentication - Rectangle
+
+                //-----------------------------------------------------------------
                 //-- Miscellaneous
                 Item {
                     width:                      _panelWidth
