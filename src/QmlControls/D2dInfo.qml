@@ -700,6 +700,16 @@ QGCView {
                 }
             }
 
+            Connections{
+                target: pD2dInforData
+                onUpdateRadioState:{
+                    //clPWRctl
+                    pD2dInforData.setCliclPWRctl(2);
+                    pD2dInforData.sendCalibrationCmd(9);
+                }
+            }
+
+
             MessageDialog {
                 id: svrMessageDialog
                 icon: StandardIcon.Warning

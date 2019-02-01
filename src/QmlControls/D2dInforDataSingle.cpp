@@ -30,6 +30,7 @@ D2dInforDataSingle::D2dInforDataSingle(QObject *parent) : QObject(parent)
     whichCalibrateFromFlag = false;
     clPWRctl = 2;
     txAntCtrl = 0;
+    currentRadioState = RADIO_STATE_ON;
 
     localServer = new QLocalServer(this);
     connect(localServer, SIGNAL(newConnection()), this, SLOT(newLocalConnection()));
@@ -194,6 +195,17 @@ void D2dInforDataSingle::dataReceived()
            {
                emit txAntCtrlSingle(index);
            }
+       }
+       else if (vTemp.contains(D2D_RADIO_STATE_TAG))
+       {
+           QStringList tempList = vTemp.split(' ');
+           QString temp = tempList.at(1);
+           int index = temp.toInt();
+           if((index == RADIO_STATE_ON)&&(currentRadioState != RADIO_STATE_ON))
+           {
+               emit updateRadioState();
+           }
+           currentRadioState = index;
        }
        else
        {
