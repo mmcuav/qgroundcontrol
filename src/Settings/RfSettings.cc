@@ -23,11 +23,15 @@ const char* RfSettings::rfAuthenticationSettingsName = "RFAuthentication";
 
 RfSettings::RfSettings(QObject* parent)
     : SettingsGroup(rfSettingsGroupName, QString(), parent)
-    , _rfAuthenticationFact(NULL)
+    , _rfAuthenticationFact(nullptr)
     , _rfConfigPropName("persist.sys.d2d.auth.cfg")
 {
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     qmlRegisterUncreatableType<RfSettings>("QGroundControl.SettingsManager", 1, 0, "RfSettings", "Reference only");
+    //set wifi at startup
+    QString defValue = QString::fromLatin1("0");
+    QString value = AndroidInterface::getSystemProperty(_rfConfigPropName, defValue);
+    _setWifiCountryCode(value.toInt());
 }
 
 Fact* RfSettings::rfAuthentication(void)
@@ -43,20 +47,30 @@ Fact* RfSettings::rfAuthentication(void)
     return _rfAuthenticationFact;
 }
 
-void RfSettings::_newRfAuthentication(QVariant value)
+void RfSettings::_setWifiCountryCode(int value)
 {
-    uint index = value.toUInt();
-    // set wifi
-    QString countryCode[] = {"CN", "US", "FR", "CN", "JP"};
-    WifiSettings* wifi = qgcApp()->toolbox()->settingsManager()->videoSettings()->videoShareSettings();
-    if (wifi != NULL) {
-        wifi->setCountryCode(countryCode[index], true);
+    QString countryCode[] = {"None", "US", "FR", "CN", "JP"};
+    if (value <= 0 || value > countryCode->length()) {
+        qWarning() << "invalid index for wifi country code." ;
+        return;
     }
-    // set d2d
-    _setToD2dService(index);
+    // set wifi
+    WifiSettings* wifi = qgcApp()->toolbox()->settingsManager()->videoSettings()->videoShareSettings();
+    if (wifi != nullptr) {
+        wifi->setCountryCode(countryCode[value], true);
+    }
 }
 
-void RfSettings::_setToD2dService(uint32_t value) {
+void RfSettings::_newRfAuthentication(QVariant value)
+{
+    int v = value.toInt();
+    // set wifi
+    _setWifiCountryCode(v);
+    // set d2d
+    _setToD2dService(v);
+}
+
+void RfSettings::_setToD2dService(int value) {
     _localSocket.connectToServer("/tmp/qgccmd");
     if (!_localSocket.waitForConnected(1000))
     {

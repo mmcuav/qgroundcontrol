@@ -29,7 +29,8 @@ private slots:
     void _newRfAuthentication(QVariant value);
 
 private:
-    void _setToD2dService(uint32_t value);
+    void _setWifiCountryCode(int value);
+    void _setToD2dService(int value);
 
     SettingsFact* _rfAuthenticationFact;
     QString _rfConfigPropName;
