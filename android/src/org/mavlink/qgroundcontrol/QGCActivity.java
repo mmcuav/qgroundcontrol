@@ -135,6 +135,7 @@ public class QGCActivity extends QtActivity
         //m_instance.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         m_wifiManager = (WifiManager)m_instance.getSystemService(Context.WIFI_SERVICE);
         m_wifiConfig = getWifiApConfiguration();
+        setWifiApBand();
         m_Cm = (ConnectivityManager)m_instance.getSystemService(Context.CONNECTIVITY_SERVICE);
         m_needRestartWifiAp = false;
     }
@@ -783,6 +784,27 @@ public class QGCActivity extends QtActivity
             }
             Method method = m_wifiManager.getClass().getMethod("setWifiApConfiguration", WifiConfiguration.class);
             return (Boolean)method.invoke(m_wifiManager, m_wifiConfig);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean setWifiApBand()
+    {
+        try {
+            Field field = m_wifiConfig.getClass().getDeclaredField("AP_BAND_5GHZ");
+            field.setAccessible(true);
+            int AP_BAND_5GHZ = (int)field.get(m_wifiConfig);
+            Field band_field = m_wifiConfig.getClass().getDeclaredField("apBand");
+            band_field.setAccessible(true);
+            int band = (int)band_field.get(m_wifiConfig);
+            if(band != AP_BAND_5GHZ) {
+                band_field.set(m_wifiConfig, AP_BAND_5GHZ);
+                Method method = m_wifiManager.getClass().getMethod("setWifiApConfiguration", WifiConfiguration.class);
+                method.invoke(m_wifiManager, m_wifiConfig);
+            }
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
