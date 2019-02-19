@@ -25,7 +25,6 @@ QMutex JoystickAndroid::m_mutex;
 JoystickAndroid::JoystickAndroid(const QString& name, int axisCount, int buttonCount, int id, MultiVehicleManager* multiVehicleManager, JoystickManager* joystickManager)
     : Joystick(name,axisCount,buttonCount,0,multiVehicleManager,joystickManager)
     , deviceId(id)
-    , listenFromAndroid(false)
 {
     int i;
     
@@ -75,8 +74,6 @@ JoystickAndroid::JoystickAndroid(const QString& name, int axisCount, int buttonC
     }
 
     qCDebug(JoystickLog) << "axis:" <<_axisCount << "buttons:" <<_buttonCount;
-    QtAndroidPrivate::registerGenericMotionEventListener(this);
-    QtAndroidPrivate::registerKeyEventListener(this);
 
     eventReader = new InputEventReader();
     connect(eventReader, &InputEventReader::keyEventRecieved, this, &JoystickAndroid::_handleKeyEvent);
@@ -89,9 +86,6 @@ JoystickAndroid::~JoystickAndroid() {
     delete axisCode;
     delete btnValue;
     delete axisValue;
-
-    QtAndroidPrivate::unregisterGenericMotionEventListener(this);
-    QtAndroidPrivate::unregisterKeyEventListener(this);
 
     disconnect(eventReader, &InputEventReader::keyEventRecieved, this, &JoystickAndroid::_handleKeyEvent);
     disconnect(eventReader, &InputEventReader::axisEventRecieved, this, &JoystickAndroid::_handleGenericMotionEvent);
@@ -155,70 +149,16 @@ QMap<QString, Joystick*> JoystickAndroid::discover(MultiVehicleManager* _multiVe
 
     env->ReleaseIntArrayElements(jarr, buff, 0);
 
-
     return ret;
-}
-
-
-bool JoystickAndroid::handleKeyEvent(jobject event) {
-    QJNIObjectPrivate ev(event);
-    QMutexLocker lock(&m_mutex);
-
-    const int _deviceId = ev.callMethod<jint>("getDeviceId", "()I");
-    if (_deviceId!=deviceId) {
-        const int ac = ev.callMethod<jint>("getAction", "()I");
-        const int kc = ev.callMethod<jint>("getKeyCode", "()I");
-        return handleKeyEventInner(kc, ac);
-    }
- 
-    const int action = ev.callMethod<jint>("getAction", "()I");
-    const int keyCode = ev.callMethod<jint>("getKeyCode", "()I");
-
-    for (int i=0;i<_buttonCount;i++) {
-        if (btnCode[i]==keyCode) {
-            if (action==ACTION_DOWN) btnValue[i] = true;
-            if (action==ACTION_UP) btnValue[i] = false;
-            return true;
-        }
-    }
-    return false;
 }
 
 void JoystickAndroid::_handleKeyEvent(int keycode, int action)
 {
-    if(listenFromAndroid) {
-        return;
-    }
-
     _handleKeyEventInner(keycode, action);
-}
-
-bool JoystickAndroid::handleGenericMotionEvent(jobject event) {
-    QJNIObjectPrivate ev(event);
-    QMutexLocker lock(&m_mutex);
-
-    if(!listenFromAndroid) {
-        //listen input event from inner thread, ignore android event here
-        return true;
-    }
-
-    const int _deviceId = ev.callMethod<jint>("getDeviceId", "()I");
-    if (_deviceId!=deviceId) return false;
- 
-    for (int i=0;i<_axisCount;i++) {
-        const float v = ev.callMethod<jfloat>("getAxisValue", "(I)F",axisCode[i]);
-        axisValue[i] = (int)(v*32767.f);
-    }
-
-    return true;
 }
 
 void JoystickAndroid::_handleGenericMotionEvent(int axiscode, float value)
 {
-    if(listenFromAndroid) {
-        return;
-    }
-
     for(int i = 0; i < _axisCount; i++) {
         if(axisCode[i] == axiscode) {
             axisValue[i] = (int)(value*32767.f);
@@ -251,54 +191,6 @@ uint8_t JoystickAndroid::_getHat(int hat,int i) {
     Q_UNUSED(i);
 
     return 0;
-}
-
-bool JoystickAndroid::handleKeyEventInner(int keycode, int action) {
-    int keyIndex;
-    int sbus, ch, value;
-    quint64 current_time = QGC::groundTimeMilliseconds();
-
-    keyIndex = getKeyIndexByCode(keycode);
-    if(keyIndex < 0) {
-        qDebug() << "unsupport key "<< keycode << ", don't proccess here";
-        return false;
-    }
-    if(!listenFromAndroid) {
-        //listen input event from inner thread, ignore android event here
-        return true;
-    }
-
-    if(action == ACTION_DOWN) {
-        if(!_keyEvents[keyIndex].isPressed) {
-            _keyEvents[keyIndex].startTime = current_time;
-            _keyEvents[keyIndex].isPressed = true;
-            if(getChannelValue(keycode, KEY_DOWN, &sbus, &ch, &value)) {
-                sendChannelValue(sbus, ch, value);
-            }
-        } else {
-            for(int i = 0; i < KEY_MAX; i++) {
-                if(_keyEvents[i].isPressed && current_time - _keyEvents[i].startTime >= LONG_PRESS_TIME && !_keyEvents[i].isLongPress) {
-                    _keyEvents[i].isLongPress = true;
-                    if(getChannelValue(_keyEvents[i].keyCode, LONG_PRESS, &sbus, &ch, &value)) {
-                        sendChannelValue(sbus, ch, value);
-                    }
-                }
-            }
-        }
-    } else {
-        if(getChannelValue(keycode, KEY_UP, &sbus, &ch, &value)) {
-            sendChannelValue(sbus, ch, value);
-        }
-        if(!_keyEvents[keyIndex].isLongPress) {
-            if(getChannelValue(keycode, SHORT_PRESS, &sbus, &ch, &value)) {
-                sendChannelValue(sbus, ch, value);
-            }
-        }
-        _keyEvents[keyIndex].isPressed = false;
-        _keyEvents[keyIndex].isLongPress = false;
-    }
-
-    return true;
 }
 
 bool JoystickAndroid::_handleKeyEventInner(int keycode, int action) {
@@ -411,6 +303,6 @@ void JoystickAndroid::_initStatic() {
     KEYCODE_B = QAndroidJniObject::getStaticField<jint>("android/view/KeyEvent", "KEYCODE_BACK");//button B
     KEYCODE_C = QAndroidJniObject::getStaticField<jint>("android/view/KeyEvent", "KEYCODE_VOLUME_UP");//button C
     KEYCODE_D = QAndroidJniObject::getStaticField<jint>("android/view/KeyEvent", "KEYCODE_VOLUME_DOWN");//buton D
-    KEYCODE_CAM = QAndroidJniObject::getStaticField<jint>("android/view/KeyEvent", "KEYCODE_CAMERA");//buton E
+    KEYCODE_CAM = QAndroidJniObject::getStaticField<jint>("android/view/KeyEvent", "KEYCODE_CAMERA");//buton CAMERA
 }
 

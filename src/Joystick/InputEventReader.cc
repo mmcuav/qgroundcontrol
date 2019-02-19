@@ -13,7 +13,7 @@
 
 static const char *DEVICE_PATH = "/dev/input";
 //if you want to add a new device to listen, please add its name here
-static const char *INPUT_DEVICES_NAME[] = { "gpio_keys", "mlx_joystick" };
+static const char *INPUT_DEVICES_NAME[] = { "gpio-keys", "mlx_joystick" };
 
 inline static float avg(float x, float y) {
     return (x + y) / 2;

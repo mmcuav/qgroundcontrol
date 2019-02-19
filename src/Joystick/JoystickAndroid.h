@@ -15,7 +15,7 @@
 #include <QtAndroidExtras/QtAndroidExtras>
 #include <QtAndroidExtras/QAndroidJniObject>
 
-class JoystickAndroid : public Joystick, public QtAndroidPrivate::GenericMotionEventListener, public QtAndroidPrivate::KeyEventListener
+class JoystickAndroid : public Joystick
 {
     Q_OBJECT
 public:
@@ -30,9 +30,6 @@ private slots:
     void handleLongPress();
 
 private:
-    bool handleKeyEvent(jobject event);
-    bool handleGenericMotionEvent(jobject event);
-
     virtual bool _open();
     virtual void _close();
     virtual bool _update();
@@ -83,7 +80,6 @@ private:
     static QMutex m_mutex;
 
     int deviceId;
-    bool listenFromAndroid;
     InputEventReader *eventReader;
 };
 
