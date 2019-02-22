@@ -273,6 +273,9 @@ Fact* VideoSettings::videoShareEnable(void)
         QAndroidJniObject value = QAndroidJniObject::callStaticObjectMethod("android/os/SystemProperties", "get",
                                     "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", prop.object<jstring>(), defaultValue.object<jstring>());
         _videoShareEnableFact->setRawValue(value.toString().toInt());
+        if(_videoShareEnableFact->rawValue().toBool()) {
+            _videoShareSettings->setVideoShareApEnabled(true);
+        }
 #endif
     }
     return _videoShareEnableFact;
@@ -285,7 +288,7 @@ bool VideoSettings::setVideoShareEnabled(bool enabled)
 {
 #ifdef __android__
     if(!_videoShareSettings->setVideoShareApEnabled(enabled)) {
-        qWarning() << "Open wifi AP hotspot failed.";
+        qWarning() << "Set wifi AP hotspot failed.";
         return false;
     }
 
