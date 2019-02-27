@@ -42,19 +42,24 @@ public:
     //default joystick config
     Q_PROPERTY(int                  joystickMode            READ joystickMode           WRITE setJoystickMode           NOTIFY joystickModeChanged)
     Q_PROPERTY(QStringList          joystickModes           READ joystickModes                                          CONSTANT)
+    Q_PROPERTY(QStringList          joystickAction          READ joystickAction         WRITE setJoystickAction)
     Q_PROPERTY(bool                 joystickEnabled         READ joystickEnabled        WRITE setJoystickEnabled        NOTIFY joystickEnabledChanged)
-    Q_PROPERTY(bool        supportsThrottleModeCenterZero   READ supportsThrottleModeCenterZero                         CONSTANT)
-    Q_PROPERTY(bool                supportsNegativeThrust   READ supportsNegativeThrust                                 CONSTANT)
-    Q_PROPERTY(bool                 supportsJSButton        READ supportsJSButton                                       CONSTANT)
-    Q_PROPERTY(int manualControlReservedButtonCount READ manualControlReservedButtonCount CONSTANT)
+    Q_PROPERTY(bool                 supportsThrottleModeCenterZero   READ supportsThrottleModeCenterZero     WRITE setSupportsThrottleModeCenterZero)
+    Q_PROPERTY(bool                 supportsNegativeThrust  READ supportsNegativeThrust WRITE setSupportsNegativeThrust)
+    Q_PROPERTY(bool                 supportsJSButton        READ supportsJSButton       WRITE setSupportsJSButton)
+    Q_PROPERTY(int manualControlReservedButtonCount READ manualControlReservedButtonCount   WRITE setManualControlReservedButtonCount)
 
     Q_PROPERTY(QQmlListProperty<KeyConfiguration> keyConfigurationList READ keyConfigurationList CONSTANT)
     Q_PROPERTY(JoystickMessageSender* joystickMessageSender READ joystickMessageSender CONSTANT)
 
     bool supportsThrottleModeCenterZero(void);
+    void setSupportsThrottleModeCenterZero(bool enabled);
     bool supportsNegativeThrust(void);
+    void setSupportsNegativeThrust(bool enabled);
     bool supportsJSButton(void);
+    void setSupportsJSButton(bool enabled);
     int  manualControlReservedButtonCount(void);
+    void setManualControlReservedButtonCount(int count);
     
     QVariantList joysticks();
     QStringList joystickNames(void);
@@ -70,6 +75,9 @@ public:
 
     int joystickMode(void);
     void setJoystickMode(int mode);
+
+    QStringList joystickAction(void);
+    void setJoystickAction(QStringList list);
 
     // List of joystick mode names
     QStringList joystickModes(void);
@@ -115,6 +123,11 @@ private:
 
     Vehicle::JoystickMode_t  _joystickMode;
     bool                     _joystickEnabled;
+    bool                    _supportsThrottleModeCenterZero;
+    bool                    _supportsNegativeThrust;
+    bool                    _supportsJSButton;
+    int                     _manualControlReservedButtonCount;
+    QStringList             _joystickAction;
 
     QTimer _joystickCheckTimer;
 };

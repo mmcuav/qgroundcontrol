@@ -164,6 +164,12 @@ void Joystick::_activeVehicleChanged(Vehicle* activeVehicle)
         if (_joystickManager->joystickEnabled()) {
             activeVehicle->setJoystickEnabled(true);
         }
+        _joystickManager->setJoystickMode(activeVehicle->joystickMode());
+        _joystickManager->setManualControlReservedButtonCount(activeVehicle->manualControlReservedButtonCount());
+        _joystickManager->setSupportsJSButton(activeVehicle->supportsJSButton());
+        _joystickManager->setSupportsNegativeThrust(activeVehicle->supportsNegativeThrust());
+        _joystickManager->setSupportsThrottleModeCenterZero(activeVehicle->supportsThrottleModeCenterZero());
+        _joystickManager->setJoystickAction(activeVehicle->flightModes());
     }
 }
 
@@ -491,8 +497,8 @@ void Joystick::run(void)
             }
 
             // Adjust throttle to 0:1 range
-            bool supportsNegativeThrust = (_activeVehicle) ? _activeVehicle->supportsThrottleModeCenterZero() : _joystickManager->supportsThrottleModeCenterZero();
-            bool supportsThrottleModeCenterZero = (_activeVehicle) ? _activeVehicle->supportsThrottleModeCenterZero() : _joystickManager->supportsThrottleModeCenterZero();
+            bool supportsNegativeThrust =  _joystickManager->supportsThrottleModeCenterZero();
+            bool supportsThrottleModeCenterZero = _joystickManager->supportsThrottleModeCenterZero();
             if (_throttleMode == ThrottleModeCenterZero && supportsThrottleModeCenterZero) {
                 if (!supportsNegativeThrust || !_negativeThrust) {
                     throttle = std::max(0.0f, throttle);
@@ -504,7 +510,7 @@ void Joystick::run(void)
             // Set up button pressed information
 
             // We only send the buttons the firmwware has reserved
-            int reservedButtonCount = (_activeVehicle) ? _activeVehicle->manualControlReservedButtonCount() : _joystickManager->manualControlReservedButtonCount();
+            int reservedButtonCount = _joystickManager->manualControlReservedButtonCount();
             if (reservedButtonCount == -1) {
                 reservedButtonCount = _totalButtonCount;
             }
@@ -541,7 +547,7 @@ void Joystick::run(void)
 
             qCDebug(JoystickValuesLog) << "name:roll:pitch:yaw:throttle:wheel" << name() << roll << -pitch << yaw << throttle << wheel;
 
-            emit manualControl(roll, -pitch, yaw, throttle, wheel, buttonPressedBits, (_activeVehicle) ? _activeVehicle->joystickMode() : _joystickManager->joystickMode());
+            emit manualControl(roll, -pitch, yaw, throttle, wheel, buttonPressedBits, _joystickManager->joystickMode());
         }
 
         // Sleep, update rate of joystick is approx. 25 Hz (1000 ms / 25 = 40 ms)
@@ -667,9 +673,7 @@ QStringList Joystick::actions(void)
 
     list << "Arm" << "Disarm";
 
-    if (_activeVehicle) {
-        list << _activeVehicle->flightModes();
-    }
+    list << _joystickManager->joystickAction();
 
     return list;
 }
