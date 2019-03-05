@@ -2151,10 +2151,14 @@ void Vehicle::_connectionLostTimeout(void)
 void Vehicle::_connectionActive(void)
 {
     _connectionLostTimer.start();
+
     if (_connectionLost) {
         _connectionLost = false;
         emit connectionLostChanged(false);
         _say(QString(tr("%1 communication regained")).arg(_vehicleIdSpeech()));
+
+        //send init Vehicle  _ By_mw 20190305
+         _firmwarePlugin->initializeVehicle(this);
 
         // Re-negotiate protocol version for the link
         sendMavCommand(MAV_COMP_ID_ALL,                         // Don't know default component id yet.
