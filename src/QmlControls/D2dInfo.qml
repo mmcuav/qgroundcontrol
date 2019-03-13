@@ -187,7 +187,7 @@ QGCView {
                 anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
                 width:                 manualBtn.width*1.2
                 anchors.bottom:         parent.bottom
-                model:          [qsTr("OMNI"), qsTr("DIRC")]
+                model:          [qsTr("LEFT"), qsTr("RIGHT")]
 
                 onActivated: {
                     if (index != -1) {
