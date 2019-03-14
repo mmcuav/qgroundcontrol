@@ -190,6 +190,7 @@
         <file alias="VibrationPageWidget.qml">src/FlightMap/Widgets/VibrationPageWidget.qml</file>
         <file alias="QGroundControl/Controls/KeyConfiguration.qml">src/QmlControls/KeyConfiguration.qml</file>
         <file alias="QGroundControl/Controls/D2dInfo.qml">src/QmlControls/D2dInfo.qml</file>
+        <file alias="SysStatusPageWidget.qml">src/FlightMap/Widgets/SysStatusPageWidget.qml</file>
     </qresource>
     <qresource prefix="/json">
         <file alias="MavCmdInfoCommon.json">src/MissionManager/MavCmdInfoCommon.json</file>

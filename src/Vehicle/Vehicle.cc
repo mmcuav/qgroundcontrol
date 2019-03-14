@@ -540,11 +540,6 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     }
 
     if (message.sysid != _id && message.sysid != 0) {
-        // Use SCALED_PRESSURE message to transfer board temperature
-        if (message.msgid == MAVLINK_MSG_ID_SCALED_PRESSURE) {
-            _handleBoardTemperature(message);
-            return;
-        }
         // We allow RADIO_STATUS messages which come from a link the vehicle is using to pass through and be handled
         if (!(message.msgid == MAVLINK_MSG_ID_RADIO_STATUS && _containsLink(link))) {
             return;
@@ -1343,12 +1338,6 @@ void Vehicle::_handleScaledPressure3(mavlink_message_t& message) {
     mavlink_scaled_pressure3_t pressure;
     mavlink_msg_scaled_pressure3_decode(&message, &pressure);
     _temperatureFactGroup.temperature3()->setRawValue(pressure.temperature / 100.0);
-}
-
-void Vehicle::_handleBoardTemperature(mavlink_message_t& message) {
-    mavlink_scaled_pressure_t pressure;
-    mavlink_msg_scaled_pressure_decode(&message, &pressure);
-    _temperatureFactGroup.boardTemperature()->setRawValue(pressure.temperature / 100.0);
 }
 
 bool Vehicle::_containsLink(LinkInterface* link)
@@ -3100,25 +3089,21 @@ VehicleVibrationFactGroup::VehicleVibrationFactGroup(QObject* parent)
 const char* VehicleTemperatureFactGroup::_temperature1FactName =      "temperature1";
 const char* VehicleTemperatureFactGroup::_temperature2FactName =      "temperature2";
 const char* VehicleTemperatureFactGroup::_temperature3FactName =      "temperature3";
-const char* VehicleTemperatureFactGroup::_boardTemperatureFactName =  "boardTemperature";
 
 VehicleTemperatureFactGroup::VehicleTemperatureFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/TemperatureFact.json", parent)
     , _temperature1Fact    (0, _temperature1FactName,     FactMetaData::valueTypeDouble)
     , _temperature2Fact    (0, _temperature2FactName,     FactMetaData::valueTypeDouble)
     , _temperature3Fact    (0, _temperature3FactName,     FactMetaData::valueTypeDouble)
-    , _boardTemperatureFact (0, _boardTemperatureFactName, FactMetaData::valueTypeDouble)
 {
     _addFact(&_temperature1Fact,       _temperature1FactName);
     _addFact(&_temperature2Fact,       _temperature2FactName);
     _addFact(&_temperature3Fact,       _temperature3FactName);
-    _addFact(&_boardTemperatureFact,       _boardTemperatureFactName);
 
     // Start out as not available "--.--"
     _temperature1Fact.setRawValue      (std::numeric_limits<float>::quiet_NaN());
     _temperature2Fact.setRawValue      (std::numeric_limits<float>::quiet_NaN());
     _temperature3Fact.setRawValue      (std::numeric_limits<float>::quiet_NaN());
-    _boardTemperatureFact.setRawValue  (std::numeric_limits<float>::quiet_NaN());
 }
 
 const char* VehicleClockFactGroup::_currentTimeFactName = "currentTime";

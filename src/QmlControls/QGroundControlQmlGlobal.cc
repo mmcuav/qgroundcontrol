@@ -34,6 +34,7 @@ QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCApplication* app, QGCToolbox
     , _flightMapInitialZoom(17.0)
     , _linkManager(NULL)
     , _multiVehicleManager(NULL)
+    , _sysStatusManager(NULL)
     , _mapEngineManager(NULL)
     , _qgcPositionManager(NULL)
     , _missionCommandTree(NULL)
@@ -76,6 +77,7 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
 
     _linkManager            = toolbox->linkManager();
     _multiVehicleManager    = toolbox->multiVehicleManager();
+    _sysStatusManager       = toolbox->sysStatusManager();
     _mapEngineManager       = toolbox->mapEngineManager();
     _qgcPositionManager     = toolbox->qgcPositionManager();
     _missionCommandTree     = toolbox->missionCommandTree();

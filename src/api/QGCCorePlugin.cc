@@ -47,6 +47,7 @@ public:
         , videoPageWidgetInfo       (NULL)
         , healthPageWidgetInfo      (NULL)
         , vibrationPageWidgetInfo   (NULL)
+        , sysStatusPageWidgetInfo   (NULL)
     {
     }
 
@@ -94,6 +95,7 @@ public:
     QmlComponentInfo*   videoPageWidgetInfo;
     QmlComponentInfo*   healthPageWidgetInfo;
     QmlComponentInfo*   vibrationPageWidgetInfo;
+    QmlComponentInfo*   sysStatusPageWidgetInfo;
     QVariantList        instrumentPageWidgetList;
 
     QmlObjectListModel _emptyCustomMapItems;
@@ -177,6 +179,7 @@ QVariantList& QGCCorePlugin::instrumentPages(void)
 #endif
         _p->healthPageWidgetInfo    = new QmlComponentInfo(tr("Health"),    QUrl::fromUserInput("qrc:/qml/HealthPageWidget.qml"));
         _p->vibrationPageWidgetInfo = new QmlComponentInfo(tr("Vibration"), QUrl::fromUserInput("qrc:/qml/VibrationPageWidget.qml"));
+        _p->sysStatusPageWidgetInfo = new QmlComponentInfo(tr("System Status"),    QUrl::fromUserInput("qrc:/qml/SysStatusPageWidget.qml"));
 
         _p->instrumentPageWidgetList.append(QVariant::fromValue(_p->valuesPageWidgetInfo));
         _p->instrumentPageWidgetList.append(QVariant::fromValue(_p->cameraPageWidgetInfo));
@@ -185,6 +188,7 @@ QVariantList& QGCCorePlugin::instrumentPages(void)
 #endif
         _p->instrumentPageWidgetList.append(QVariant::fromValue(_p->healthPageWidgetInfo));
         _p->instrumentPageWidgetList.append(QVariant::fromValue(_p->vibrationPageWidgetInfo));
+        _p->instrumentPageWidgetList.append(QVariant::fromValue(_p->sysStatusPageWidgetInfo));
     }
     return _p->instrumentPageWidgetList;
 }
@@ -275,7 +279,7 @@ QString QGCCorePlugin::showAdvancedUIMessage(void) const
 void QGCCorePlugin::valuesWidgetDefaultSettings(QStringList& largeValues, QStringList& smallValues)
 {
     Q_UNUSED(smallValues);
-    largeValues << "Vehicle.altitudeRelative" << "Vehicle.groundSpeed" << "Vehicle.flightTime" << "Vehicle.temperature.boardTemperature";
+    largeValues << "Vehicle.altitudeRelative" << "Vehicle.groundSpeed" << "Vehicle.flightTime";
 }
 
 QQmlApplicationEngine* QGCCorePlugin::createRootWindow(QObject *parent)

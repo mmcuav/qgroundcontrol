@@ -191,6 +191,7 @@ private:
     LinkManager*            _linkMgr;
     MultiVehicleManager*    _multiVehicleManager;
     SystemMessageHandler*   _systemMessageHandler;
+    SysStatusManager*       _sysStatusManager;
 };
 
 #endif // MAVLINKPROTOCOL_H_

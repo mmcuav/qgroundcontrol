@@ -589,6 +589,7 @@ HEADERS += \
     src/comm/LinkConfiguration.h \
     src/comm/LinkInterface.h \
     src/comm/LinkManager.h \
+    src/comm/SysStatusManager.h \
     src/comm/MAVLinkProtocol.h \
     src/comm/ProtocolInterface.h \
     src/comm/QGCMAVLink.h \
@@ -789,6 +790,7 @@ SOURCES += \
     src/comm/LinkConfiguration.cc \
     src/comm/LinkInterface.cc \
     src/comm/LinkManager.cc \
+    src/comm/SysStatusManager.cc \
     src/comm/MAVLinkProtocol.cc \
     src/comm/QGCMAVLink.cc \
     src/comm/TCPLink.cc \
