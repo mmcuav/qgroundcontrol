@@ -170,6 +170,8 @@ void Joystick::_activeVehicleChanged(Vehicle* activeVehicle)
         _joystickManager->setSupportsNegativeThrust(activeVehicle->supportsNegativeThrust());
         _joystickManager->setSupportsThrottleModeCenterZero(activeVehicle->supportsThrottleModeCenterZero());
         _joystickManager->setJoystickAction(activeVehicle->flightModes());
+
+        saveJoystickSettings();
     }
 }
 
@@ -314,6 +316,8 @@ void Joystick::_saveSettings(void)
         settings.setValue(QString(_buttonActionSettingsKey).arg(button), _rgButtonActions[button]);
         qCDebug(JoystickLog) << "_saveSettings button:action" << button << _rgButtonActions[button];
     }
+
+    saveJoystickSettings();
 }
 
 // Relative mappings of axis functions between different TX modes

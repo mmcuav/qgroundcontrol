@@ -4,12 +4,17 @@
 
 #include <QQmlEngine>
 #include <QTimer>
+#include <fstream>
 
 #define KEY_DOWN KeyConfiguration::keyAction_down
 #define KEY_UP KeyConfiguration::keyAction_up
 #define SHORT_PRESS KeyConfiguration::keyAction_shortPress
 #define LONG_PRESS KeyConfiguration::keyAction_longPress
 #define LONG_PRESS_TIME 1000L//1000ms
+#define JOYSTICK_CONFIG_FILENAME "JoystickConfig.ini"
+#define RC_JOYSTICK_CONFIG_FILENAME "/data/rc-service/joystickconfig.ini"
+#define DEFAULT_MIN_CHANNEL_VALUE 364
+#define DEFAULT_MAX_CHANNEL_VALUE 1684
 
 int JoystickAndroid::_androidBtnListCount;
 int *JoystickAndroid::_androidBtnList;
@@ -79,6 +84,7 @@ JoystickAndroid::JoystickAndroid(const QString& name, int axisCount, int buttonC
     connect(eventReader, &InputEventReader::keyEventRecieved, this, &JoystickAndroid::_handleKeyEvent);
     connect(eventReader, &InputEventReader::axisEventRecieved, this, &JoystickAndroid::_handleGenericMotionEvent);
     eventReader->start();
+    _configSaver = new QSettings(JOYSTICK_CONFIG_FILENAME, QSettings::IniFormat);
 }
 
 JoystickAndroid::~JoystickAndroid() {
@@ -91,6 +97,7 @@ JoystickAndroid::~JoystickAndroid() {
     disconnect(eventReader, &InputEventReader::axisEventRecieved, this, &JoystickAndroid::_handleGenericMotionEvent);
     eventReader->quit();
     delete eventReader;
+    delete _configSaver;
 }
 
 QMap<QString, Joystick*> JoystickAndroid::discover(MultiVehicleManager* _multiVehicleManager, JoystickManager* _joystickManager) {
@@ -261,6 +268,80 @@ bool JoystickAndroid::getChannelValue(int keyCode, KeyConfiguration::KeyAction_t
         qDebug() << "keyCode = " << keyCode << " sbus = " << *sbus << " ch = " << *ch << " value = " << *value;
     }
     return ret;
+}
+
+void JoystickAndroid::saveJoystickSettings()
+{
+    QSettings settings;
+    static const char* functionSettingsKey[Joystick::maxFunction] = {
+        "RollAxis",
+        "PitchAxis",
+        "YawAxis",
+        "ThrottleAxis",
+        "WheelAxis"
+    };
+    static const char* functionChannelsKey[4] = {
+        "RollChannel",
+        "PitchChannel",
+        "YawChannel",
+        "ThrottleChannel",
+    };
+    static const int functionChennels[4] = { 1, 2, 4, 3 };
+
+    _configSaver->beginGroup("Basic");
+    _configSaver->setValue("calibrated", _calibrated);
+    _configSaver->setValue("transmitterMode", _transmitterMode);
+    _configSaver->endGroup();
+
+    QString groupTpl  ("Axis%1Calibration");
+    for (int axis=0; axis<_axisCount; axis++) {
+        Calibration_t* calibration = &_rgCalibration[axis];
+
+        _configSaver->beginGroup(groupTpl.arg(axis));
+        _configSaver->setValue("AxisTrim", calibration->center);
+        _configSaver->setValue("AxisMin", calibration->min);
+        _configSaver->setValue("AxisMax", calibration->max);
+        _configSaver->setValue("AxisRev", calibration->reversed);
+        _configSaver->setValue("AxisDeadband", calibration->deadband);
+        _configSaver->endGroup();
+    }
+
+    _configSaver->beginGroup("Function");
+    settings.beginGroup("Joysticks");
+    settings.beginGroup(_name);
+    for (int function=0; function<maxFunction; function++) {
+        _configSaver->setValue(functionSettingsKey[function], settings.value(functionSettingsKey[function]));
+    }
+    _configSaver->endGroup();
+
+    _configSaver->beginGroup("FunctionChannel");
+    for (int i = 0; i < 4; i++) {
+        _configSaver->setValue(functionChannelsKey[i], functionChennels[i]);
+    }
+    _configSaver->setValue("MinChannelValue", DEFAULT_MIN_CHANNEL_VALUE);
+    _configSaver->setValue("MaxChannelValue", DEFAULT_MAX_CHANNEL_VALUE);
+    _configSaver->endGroup();
+
+    _configSaver->beginGroup("Additional");
+    _configSaver->setValue("Exponential", QString::number(_exponential));
+    _configSaver->setValue("Accumulator", _accumulator);
+    _configSaver->setValue("Deadband", _deadband);
+    _configSaver->setValue("ThrottleMode", _throttleMode);
+    _configSaver->setValue("CenterZeroSupport", _joystickManager->supportsThrottleModeCenterZero());
+    _configSaver->setValue("NegativeThrust", _negativeThrust);
+    _configSaver->endGroup();
+    _configSaver->sync();
+
+    std::ifstream infile(JOYSTICK_CONFIG_FILENAME);
+    std::ofstream outfile(RC_JOYSTICK_CONFIG_FILENAME);
+    char buf[2048];
+    while(infile) {
+        infile.read(buf, 2048);
+        outfile.write(buf, infile.gcount());
+    }
+
+    infile.close();
+    outfile.close();
 }
 
 //helper method

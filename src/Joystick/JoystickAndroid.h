@@ -10,6 +10,7 @@
 #include <jni.h>
 #include <QObject>
 #include <QTimer>
+#include <QSettings>
 #include <QtCore/private/qjni_p.h>
 #include <QtCore/private/qjnihelpers_p.h>
 #include <QtAndroidExtras/QtAndroidExtras>
@@ -37,6 +38,7 @@ private:
     virtual bool _getButton(int i);
     virtual int _getAxis(int i);
     virtual uint8_t _getHat(int hat,int i);
+    virtual void saveJoystickSettings();
     bool handleKeyEventInner(int keycode, int action);
     bool _handleKeyEventInner(int keycode, int action);
     int getKeyIndexByCode(int code);
@@ -81,6 +83,7 @@ private:
 
     int deviceId;
     InputEventReader *eventReader;
+    QSettings *_configSaver;
 };
 
 #endif // JOYSTICKANDROID_H

@@ -80,7 +80,7 @@ public:
     int getChannelValueCount(int channel);
 
     static bool getChannelValue(int keyCode, KeyAction_t action, int* sbus, int* channel, int* value);
-    static bool getScrollWheelSetting(int *sbus, int *channle);
+    static bool getScrollWheelSetting(int *sbus, int *channel);
     int channelCount();
     bool sbusEnable();
     void setSbusEnable(bool sbusEnable);
@@ -106,7 +106,9 @@ private:
     void _loadSettingToCache();
     void _setChannelDefaultValues();
     void _saveKeyConfiguration(int keyIndex);
+    void _saveKeyConfigToFile(int keyIndex);
     void _saveScrollWheelConfiguration();
+    void _saveSWConfigToFile();
 
     static int _deviceKeyCount;
     static KeySetting_t* _keySettingCache;
@@ -125,4 +127,5 @@ private:
     QString _keySettingGroup;
     QStringList _keyStringList;
     QStringList _controlModeList;
+    QSettings *_configSaver;
 };
