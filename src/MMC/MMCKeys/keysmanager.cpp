@@ -116,6 +116,15 @@ void KeysManager::onClick(MMCKey *key)
 /* ----------------------------------------- */
 void KeysManager::photo()
 {
+//    if(qgcApp()->toolbox()->multiVehicleManager()->activeVehicleAvailable()){
+//        Vehicle* activeVehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+//        if(activeVehicle && !activeVehicle->mountLost() && activeVehicle->currentMount() && activeVehicle->currentMount()->mountType() ==MountInfo::MOUNT_CUSTOM){
+//            CustomMount* camMount = dynamic_cast<CustomMount*>(activeVehicle->currentMount());
+//            camMount->doCameraTrigger();
+//        }
+//    }
+
+
     if(qgcApp()->toolbox()->multiVehicleManager()->activeVehicleAvailable()){
         Vehicle* activeVehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
         if(activeVehicle){
@@ -128,8 +137,8 @@ void KeysManager::REC()
 {
     if(qgcApp()->toolbox()->multiVehicleManager()->activeVehicleAvailable()){
         Vehicle* activeVehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
-        if(activeVehicle && !activeVehicle->mountLost() && activeVehicle->currentMount() && activeVehicle->currentMount()->mountType() ==MountInfo::MOUNT_CAM_INFO){
-            CameraMount* camMount = dynamic_cast<CameraMount*>(activeVehicle->currentMount());
+        if(activeVehicle && !activeVehicle->mountLost() && activeVehicle->currentMount() && activeVehicle->currentMount()->mountType() ==MountInfo::MOUNT_CUSTOM){
+            CustomMount* camMount = dynamic_cast<CustomMount*>(activeVehicle->currentMount());
             camMount->videoTape();
         }
     }

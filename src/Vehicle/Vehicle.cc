@@ -443,14 +443,10 @@ void Vehicle::_commonInit(void)
     _flightDistanceFact.setRawValue(0);
     _flightTimeFact.setRawValue(0);
 
-
     if(_currentMount == nullptr){
-        _currentMount = new CameraMount(this);
-        CameraMount* camMount = dynamic_cast<CameraMount*>(_currentMount);
-        camMount->setCam_type(CameraMount::CAM_SONGXIA20); //继承类要无效化此函数
+        _currentMount = new CustomMount(this);
         _mountConnected = true;
         _mountLost = false;
-
         emit currentMountChanged();
         emit mountLostChanged();
     }
@@ -3083,7 +3079,7 @@ void Vehicle::handleMountInfo(const can_data &tmpdata)
                 mount = new LightMount(this);
                 break;
             default: // 这一应该有个weizhi挂载类  --  通道控制
-                mount = new CustomMount(this);
+                mount = new CustomMount(this, tmpdata.can_id);
                 break;
             }
         }

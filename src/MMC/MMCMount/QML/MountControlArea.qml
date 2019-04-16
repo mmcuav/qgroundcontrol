@@ -65,7 +65,7 @@ Item{
         onUpdated: {
             if(control_Area.isPressed && control_Area.posiTionChanged)
                 return;
-//                        console.log("-----------------MultiPointTouchArea onUpdated", touchPoints.length)
+                        console.log("-----------------MultiPointTouchArea onUpdated", touchPoints.length)
             if(touchPoints.length === 2)
             {
                 var curDistance = Math.sqrt((touchPoints[1].x - touchPoints[0].x)*(touchPoints[1].x - touchPoints[0].x) + (touchPoints[1].y - touchPoints[0].y)*(touchPoints[1].y - touchPoints[0].y))
@@ -82,7 +82,7 @@ Item{
             interval_delay.start()
         }
         onCanceled: {
-//                        console.log("-----------------MultiPointTouchArea onCanceled")
+                        console.log("-----------------MultiPointTouchArea onCanceled")
             isPressed = false;
             _activeVehicle.currentMount.controlZoom(1)
             guesture_Type = 0
@@ -165,10 +165,10 @@ Item{
                     console.log("-------------onReleased");
 
                     if(_activeVehicle &&  _activeVehicle.mountLost && !_activeVehicle.currentMount
-                            && (_activeVehicle.currentMount.mountType !==284 || _activeVehicle.currentMount.mountType === 362 || _activeVehicle.currentMount.mountType === 1))//倾斜 4G喊话 未知 没有此功能
+                            && (_activeVehicle.currentMount.mountType !==284 || _activeVehicle.currentMount.mountType === 362 /*|| _activeVehicle.currentMount.mountType === 1*/))//倾斜 4G喊话 未知 没有此功能
                         activeVehicle.currentMount.controlPitch(0, false)
 
-                    if(_activeVehicle &&  _activeVehicle.mountLost && !_activeVehicle.currentMount && _activeVehicle.currentMount.mountType ===0)//非云台类 没有此功能
+                    if(_activeVehicle &&  _activeVehicle.mountLost && !_activeVehicle.currentMount /*&& _activeVehicle.currentMount.mountType ===0*/)//非云台类 没有此功能
                         activeVehicle.currentMount.controlHead(0, false)
                 }
 
@@ -203,6 +203,7 @@ Item{
             }
 
             onPositionChanged: {
+                console.log("----------------------------onPositionChanged")
                 if(multiArea.isPressed)
                     return;
                 curPos.x = mouse.x
@@ -314,13 +315,13 @@ Item{
         interval: 100
         repeat: true
         onTriggered: {
-//            console.log( "----------------------------------------" );
+            console.log( "----------------------------------------onTriggered" );
             if(_control.type === 3 || _control.type === 4) return;
             if(control_Area.isPressed && control_Area.posiTionChanged /*&& _control.type !== 3*/)
             {
                 if(Math.abs(control_Area.curPos.x - control_Area.oldPos.x) > Math.abs(control_Area.curPos.y - control_Area.oldPos.y))
                 {
-                    if(!_activeVehicle || _activeVehicle.mountLost || !_activeVehicle.currentMount || _activeVehicle.currentMount.mountType !==0)
+                    if(!_activeVehicle || _activeVehicle.mountLost || !_activeVehicle.currentMount /*|| _activeVehicle.currentMount.mountType !==0*/)
                         return; //非云台类没有此功能
 
                     if((control_Area.curPos.x - control_Area.oldPos.x)>0)
@@ -330,7 +331,7 @@ Item{
                 }
                 else{
                     if(!_activeVehicle || _activeVehicle.mountLost || !_activeVehicle.currentMount
-                            || _activeVehicle.currentMount.mountType === 284 || _activeVehicle.currentMount.mountType === 362 || _activeVehicle.currentMount.mountType === 1)
+                            || _activeVehicle.currentMount.mountType === 284 || _activeVehicle.currentMount.mountType === 362 /*|| _activeVehicle.currentMount.mountType === 1*/)
                         return; //倾斜 4G喊话 没有此功能
 
                     if((control_Area.curPos.y - control_Area.oldPos.y)>0)

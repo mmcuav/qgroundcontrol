@@ -131,21 +131,21 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
     const float ch3 = (yaw+1) * axesScaling;
     const float ch4 = thrust * axesScaling;
 
-    /* kong pitch */
-    if(manualThrust * axesScaling != 0) qDebug() << "-----------------------------handleManualControl" <<  manualThrust * axesScaling;
+    /* kong zoom */
+    if(manualThrust * axesScaling != 0) qDebug() << "-----------------------------handleManualControl"
+                                                 <<  manualThrust * axesScaling << qgcApp()->toolbox()->multiVehicleManager()->activeVehicleAvailable();
+
     if(qgcApp()->toolbox()->multiVehicleManager()->activeVehicleAvailable() &&  !qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->mountLost()){
         MountInfo* mount = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->currentMount();
-        if(mount->mountType() == 0) {
-            CameraMount* cameraMount = (CameraMount*)mount;
+        if(mount->mountType() == 1) {
+            CustomMount* cameraMount = (CustomMount*)mount;
             static int zoom = 1;
             if(manualThrust * axesScaling > 200){
                 zoom = 2;
                 cameraMount->controlZoom(zoom);
-//                    cameraMount->controlPitch(5, true);
             }else if(manualThrust * axesScaling < -200){
                 zoom = 0;
                 cameraMount->controlZoom(zoom);
-//                    cameraMount->controlPitch(5, false);
             }else{
                 if(zoom != 1){
                     zoom = 1;
