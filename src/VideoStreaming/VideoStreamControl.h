@@ -48,6 +48,7 @@ private slots:
     void _connectionLostTimeout();
     void _settingInProgressTimeout();
     void _cameraIdChanged();
+    void _videoShareChanged();
 
 private:
     int _systemId;

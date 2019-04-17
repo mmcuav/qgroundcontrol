@@ -124,5 +124,12 @@
     "longDescription":  "Camera ID used for video streaming.",
     "type":             "uint32",
     "defaultValue":     0
+},
+{
+    "name":             "VideoShareEnable",
+    "shortDescription": "Enable Video Share",
+    "longDescription":  "Enable Video Share with other devices.",
+    "type":             "bool",
+    "defaultValue":     false
 }
 ]

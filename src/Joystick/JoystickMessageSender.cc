@@ -155,6 +155,7 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
         }
     }
 
+#if 0
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     mavlink_message_t message;
     MAVLinkProtocol* mavlink = qgcApp()->toolbox()->mavlinkProtocol();
@@ -188,7 +189,8 @@ void JoystickMessageSender::_handleManualControl(float roll, float pitch, float 
                                  0, 0, 255);
 
     len = mavlink_msg_to_send_buffer(buffer, &message);
-    _udpLink->writeBytesSafe((const char*)buffer, len); 
+    _udpLink->writeBytesSafe((const char*)buffer, len);
+#endif
 }
 
 void JoystickMessageSender::_activeJoystickChanged(Joystick* joystick)

@@ -11,11 +11,13 @@
 #include <QDateTime>
 #include "MAVLinkProtocol.h"
 #include "SystemMessageHandler.h"
+#include "QGCApplication.h"
 
 SystemMessageHandler::SystemMessageHandler(MAVLinkProtocol* protocol)
     : QObject()
 {
-    _mavlinkProtocol = protocol;
+    _mavlinkProtocol  =  protocol;
+
     connect(protocol, &MAVLinkProtocol::messageReceived, this, &SystemMessageHandler::_receiveMessage);
 }
 
@@ -27,10 +29,27 @@ void SystemMessageHandler::_receiveMessage(LinkInterface* link, mavlink_message_
         return;
     }
 
+    _activeVehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+
+    int _id = _activeVehicle ? _activeVehicle->id() : 0;
+
+    if ((message.sysid != _id && message.sysid != 0) && (message.msgid == MAVLINK_MSG_ID_SCALED_PRESSURE))
+    {
+        _handleBoardTemperature(message);
+    }
+
     if (message.msgid == MAVLINK_MSG_ID_TIMESYNC)
     {
         _handleTimeSyncMessage(link, message);
     }
+}
+
+void SystemMessageHandler::_handleBoardTemperature(mavlink_message_t& message)
+{
+    mavlink_scaled_pressure_t pressure;
+    mavlink_msg_scaled_pressure_decode(&message, &pressure);
+    QString temp = QString::number(pressure.temperature / 100.0, 'f', 2);
+    emit boardTemputureChanged(temp);
 }
 
 void SystemMessageHandler::_handleTimeSyncMessage(LinkInterface* link, mavlink_message_t& message)

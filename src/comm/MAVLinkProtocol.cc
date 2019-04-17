@@ -64,6 +64,7 @@ MAVLinkProtocol::MAVLinkProtocol(QGCApplication* app, QGCToolbox* toolbox)
     , _tempLogFile(QString("%2.%3").arg(_tempLogFileTemplate).arg(_logFileExtension))
     , _linkMgr(NULL)
     , _multiVehicleManager(NULL)
+    , _sysStatusManager(NULL)
 {
     memset(&totalReceiveCounter, 0, sizeof(totalReceiveCounter));
     memset(&totalLossCounter, 0, sizeof(totalLossCounter));
@@ -104,6 +105,7 @@ void MAVLinkProtocol::setToolbox(QGCToolbox *toolbox)
 
    _linkMgr =               _toolbox->linkManager();
    _multiVehicleManager =   _toolbox->multiVehicleManager();
+   _sysStatusManager    =   _toolbox->sysStatusManager();
 
    qRegisterMetaType<mavlink_message_t>("mavlink_message_t");
 
@@ -121,12 +123,15 @@ void MAVLinkProtocol::setToolbox(QGCToolbox *toolbox)
        }
    }
 
+
    connect(this, &MAVLinkProtocol::protocolStatusMessage,   _app, &QGCApplication::criticalMessageBoxOnMainThread);
    connect(this, &MAVLinkProtocol::saveTelemetryLog,        _app, &QGCApplication::saveTelemetryLogOnMainThread);
    connect(this, &MAVLinkProtocol::checkTelemetrySavePath,  _app, &QGCApplication::checkTelemetrySavePathOnMainThread);
 
    connect(_multiVehicleManager, &MultiVehicleManager::vehicleAdded, this, &MAVLinkProtocol::_vehicleCountChanged);
    connect(_multiVehicleManager, &MultiVehicleManager::vehicleRemoved, this, &MAVLinkProtocol::_vehicleCountChanged);
+
+   connect(_systemMessageHandler, &SystemMessageHandler::boardTemputureChanged,  _sysStatusManager, &SysStatusManager::setBoardTemputure);
 
    emit versionCheckChanged(m_enable_version_check);
 }

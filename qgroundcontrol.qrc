@@ -190,6 +190,7 @@
         <file alias="VibrationPageWidget.qml">src/FlightMap/Widgets/VibrationPageWidget.qml</file>
         <file alias="QGroundControl/Controls/KeyConfiguration.qml">src/QmlControls/KeyConfiguration.qml</file>
         <file alias="QGroundControl/Controls/D2dInfo.qml">src/QmlControls/D2dInfo.qml</file>
+        <file alias="SysStatusPageWidget.qml">src/FlightMap/Widgets/SysStatusPageWidget.qml</file>
     </qresource>
     <qresource prefix="/json">
         <file alias="MavCmdInfoCommon.json">src/MissionManager/MavCmdInfoCommon.json</file>
@@ -208,6 +209,7 @@
         <file alias="StructureScan.SettingsGroup.json">src/MissionManager/StructureScan.SettingsGroup.json</file>
         <file alias="Units.SettingsGroup.json">src/Settings/Units.SettingsGroup.json</file>
         <file alias="Video.SettingsGroup.json">src/Settings/Video.SettingsGroup.json</file>
+        <file alias="RF.SettingsGroup.json">src/Settings/RF.SettingsGroup.json</file>
         <file alias="RallyPoint.FactMetaData.json">src/MissionManager/RallyPoint.FactMetaData.json</file>
         <file alias="FWLandingPattern.FactMetaData.json">src/MissionManager/FWLandingPattern.FactMetaData.json</file>
         <file alias="USBBoardInfo.json">src/comm/USBBoardInfo.json</file>

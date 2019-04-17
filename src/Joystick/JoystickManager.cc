@@ -36,6 +36,12 @@ JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     , _joystickMessageSender(NULL)
     , _joystickMode(Vehicle::JoystickModeRC)
     , _joystickEnabled(false)
+    //default config for generic vehicle
+    , _supportsThrottleModeCenterZero(true)
+    , _supportsNegativeThrust(false)
+    , _supportsJSButton(false)
+    , _manualControlReservedButtonCount(0)
+    , _joystickAction(NULL)
 {
     connect(this, &JoystickManager::activeJoystickChanged, this, &JoystickManager::_loadSettings);
 }
@@ -60,20 +66,48 @@ JoystickManager::~JoystickManager() {
 
 bool JoystickManager::supportsThrottleModeCenterZero(void)
 {
-    return true;//default config for generic vehicle
+    return _supportsThrottleModeCenterZero;
 }
 
 bool JoystickManager::supportsNegativeThrust(void)
 {
-    return false;//default config for generic vehicle
+    return _supportsNegativeThrust;
 }
 bool JoystickManager::supportsJSButton(void)
 {
-    return false;//default config for generic vehicle
+    return _supportsJSButton;
 }
 int  JoystickManager::manualControlReservedButtonCount(void)
 {
-    return 0;//default config for generic vehicle
+    return _manualControlReservedButtonCount;
+}
+
+QStringList JoystickManager::joystickAction(void)
+{
+    return _joystickAction;
+}
+
+void JoystickManager::setJoystickAction(QStringList list)
+{
+    _joystickAction = list;
+}
+
+void JoystickManager::setSupportsThrottleModeCenterZero(bool enabled)
+{
+    _supportsThrottleModeCenterZero = enabled;
+}
+
+void JoystickManager::setSupportsNegativeThrust(bool enabled)
+{
+    _supportsNegativeThrust = enabled;
+}
+void JoystickManager::setSupportsJSButton(bool enabled)
+{
+    _supportsJSButton = enabled;
+}
+void JoystickManager::setManualControlReservedButtonCount(int count)
+{
+    _manualControlReservedButtonCount = count;
 }
 
 void JoystickManager::_loadSettings(void)

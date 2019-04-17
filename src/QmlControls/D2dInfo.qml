@@ -44,6 +44,8 @@ QGCView {
 
     property string qgcCmd
 
+    property string intTostringValue
+
     QGCPalette { id: qgcPal; colorGroupEnabled: panel.enabled }
 
     QGCViewPanel {
@@ -185,7 +187,7 @@ QGCView {
                 anchors.leftMargin:    ScreenTools.defaultFontPixelWidth
                 width:                 manualBtn.width*1.2
                 anchors.bottom:         parent.bottom
-                model:          [qsTr("OMNI"), qsTr("DIRC")]
+                model:          [qsTr("LEFT"), qsTr("RIGHT")]
 
                 onActivated: {
                     if (index != -1) {
@@ -332,6 +334,15 @@ QGCView {
                     {
                         //check value is right
                         __setValue = parseInt(manualSetValue.text);
+                        intTostringValue = __setValue;
+                        if((intTostringValue === "nan")||(intTostringValue === "NaN"))
+                        {
+                            svrMessageDialog.text = "Illegal characters entered, please check before entering !";
+                            svrMessageDialog.open();
+                            okButton.checked = false;
+                            return;
+                        }
+
                         if(urDlCombo.currentIndex == 0)
                         {
                             if(__setValue < 47050 || __setValue  > 47785)
@@ -688,6 +699,16 @@ QGCView {
                     txCombo.currentIndex = index - 1;
                 }
             }
+
+            Connections{
+                target: pD2dInforData
+                onUpdateRadioState:{
+                    //clPWRctl
+                    pD2dInforData.setCliclPWRctl(2);
+                    pD2dInforData.sendCalibrationCmd(9);
+                }
+            }
+
 
             MessageDialog {
                 id: svrMessageDialog
