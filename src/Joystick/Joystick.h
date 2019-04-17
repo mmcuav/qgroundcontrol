@@ -182,6 +182,7 @@ private:
     virtual bool _getButton(int i) = 0;
     virtual int _getAxis(int i) = 0;
     virtual uint8_t _getHat(int hat,int i) = 0;
+    virtual void saveJoystickSettings() = 0;
 
     void _updateTXModeSettingsKey(Vehicle* activeVehicle);
     int _mapFunctionMode(int mode, int function);

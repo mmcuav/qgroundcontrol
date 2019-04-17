@@ -16,6 +16,7 @@
 #endif
 #include "JoystickManager.h"
 #include "LinkManager.h"
+#include "SysStatusManager.h"
 #include "MAVLinkProtocol.h"
 #include "MissionCommandTree.h"
 #include "MultiVehicleManager.h"
@@ -45,6 +46,7 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     , _imageProvider(NULL)
     , _joystickManager(NULL)
     , _linkManager(NULL)
+    , _sysStatusManager(NULL)
     , _mavlinkProtocol(NULL)
     , _missionCommandTree(NULL)
     , _multiVehicleManager(NULL)
@@ -80,6 +82,7 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     _followMe =                 new FollowMe                (app, this);
     _videoManager =             new VideoManager            (app, this);
     _mavlinkLogManager =        new MAVLinkLogManager       (app, this);
+    _sysStatusManager =         new SysStatusManager        (app, this);
 }
 
 void QGCToolbox::setChildToolboxes(void)
@@ -97,6 +100,7 @@ void QGCToolbox::setChildToolboxes(void)
     _imageProvider->setToolbox(this);
     _joystickManager->setToolbox(this);
     _linkManager->setToolbox(this);
+    _sysStatusManager->setToolbox(this);
     _mavlinkProtocol->setToolbox(this);
     _missionCommandTree->setToolbox(this);
     _multiVehicleManager->setToolbox(this);

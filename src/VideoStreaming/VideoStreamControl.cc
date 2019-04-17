@@ -31,6 +31,7 @@ VideoStreamControl::VideoStreamControl()
     _videoSettings = qgcApp()->toolbox()->settingsManager()->videoSettings();
     _cameraIdSetting = _videoSettings->cameraId()->rawValue().toUInt();
     connect(_videoSettings->cameraId(),   &Fact::rawValueChanged, this, &VideoStreamControl::_cameraIdChanged);
+    connect(_videoSettings->videoShareEnable(),   &Fact::rawValueChanged, this, &VideoStreamControl::_videoShareChanged);
     connect(&_connectionLostTimer, &QTimer::timeout, this, &VideoStreamControl::_connectionLostTimeout);
     connect(&_settingInProgressTimer, &QTimer::timeout, this, &VideoStreamControl::_settingInProgressTimeout);
 }
@@ -41,6 +42,10 @@ VideoStreamControl::~VideoStreamControl()
 
 QString VideoStreamControl::videoStreamUrl()
 {
+    if (_videoSettings->videoShareEnable()->rawValue().toBool()) {
+        // hard-code the url to proxy server
+        return "rtsp://127.0.0.1:8554/fpv_stream";
+    }
     return _videoStreamUrl;
 }
 
@@ -108,6 +113,11 @@ void VideoStreamControl::_settingInProgressTimeout()
 void VideoStreamControl::_cameraIdChanged()
 {
     _setCameraIdLockUi(true);
+}
+
+void VideoStreamControl::_videoShareChanged()
+{
+    emit videoStreamUrlChanged();
 }
 
 void VideoStreamControl::_handleHeartbeatInfo(LinkInterface* link, mavlink_message_t& message)

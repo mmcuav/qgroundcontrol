@@ -34,6 +34,7 @@
 
 #define D2D_TX_POWER_CTRL_STATE_TAG           "TX_PWR_CTRL"
 #define D2D_TX_ANT_BITMAP_TAG                 "TX_ANT_BITMAP"
+#define D2D_RADIO_STATE_TAG                   "RADIO_STAT"
 
 
 /* qgc cmd message tag definition */
@@ -64,6 +65,14 @@
 #define EVERYTIME_DATA_NUMBER                  116
 #define MAX_COLOR_NUMBER                       5
 #define MAX_DATA_DISTANCE                      25
+
+
+typedef enum {
+    RADIO_STATE_OFF          = 0,           /* Radio explictly powered off (eg CFUN=0) */
+    RADIO_STATE_UNAVAILABLE  = 1,           /* Radio unavailable (eg, resetting or not booted) */
+    RADIO_STATE_ON           = 10,          /* Radio is on */
+    RADIO_STATE_FREQ_SCAN    = 11           /* D2D frequency scanning mode (eg CFUN=7), manual frequency point negotiation */
+} D2D_RadioState;
 
 
 class D2dInforDataSingle: public QObject
@@ -124,6 +133,9 @@ private:
     //QGCTXANTCTRL
     int txAntCtrl;
 
+    //D2D_RadioState
+    int currentRadioState;
+
 public slots:
     void newLocalConnection();
     void dataReceived();
@@ -158,6 +170,10 @@ signals:
 
     //QGCTXANTCTRL
     void txAntCtrlSingle(int index);
+
+    //D2D_RadioState
+    void updateRadioState();
+
 
 public:
     static void Destroy();

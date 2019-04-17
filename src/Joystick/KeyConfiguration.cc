@@ -9,9 +9,14 @@
 
 #include "JoystickManager.h"
 #include "KeyConfiguration.h"
+#include<fstream>
+
 
 #define SCALE_OFFSET 874
 #define SCALE_FACTOR 0.625
+#define KEY_CONFIG_FILENAME "KeysConfig.ini"
+#define RC_KEY_CONFIG_FILENAME "/data/rc-service/keyconfig.ini"
+
 QString KeyConfiguration::sControlModes[] = {
     "Undefine",
     "Scroll Wheel",
@@ -53,6 +58,8 @@ KeyConfiguration::KeyConfiguration(JoystickManager* joystickManager, int channel
 {
     _keySettingCache = new KeySetting_t[_deviceKeyCount*2];
     memset(_keySettingCache, 0, sizeof(KeySetting_t) * _deviceKeyCount * 2);
+    _configSaver = new QSettings(KEY_CONFIG_FILENAME, QSettings::IniFormat);
+
     for(int i = 0; i < _deviceKeyCount; i++) {
         _keyNameList << sKeyNames[i];
         _keyStringList << _keyNameList[i] + " short press";
@@ -68,6 +75,7 @@ KeyConfiguration::KeyConfiguration(JoystickManager* joystickManager, int channel
 KeyConfiguration::~KeyConfiguration()
 {
     delete[] _keySettingCache;
+    delete _configSaver;
 }
 
 void KeyConfiguration::_loadSettingToCache()
@@ -85,11 +93,14 @@ void KeyConfiguration::_loadSettingToCache()
         _keySettingCache[keyIndex].switchType = settings.value("switchType").toInt();
         _keySettingCache[keyIndex].defaultValue = settings.value("defaultValue").toInt();
         settings.endGroup();
+
+        _saveKeyConfigToFile(keyIndex);
     }
     settings.beginGroup("scrollwheel");
     _scrollWheelSetting.sbus = settings.value("sbus").toInt();
     _scrollWheelSetting.channel = settings.value("channel").toInt();
     settings.endGroup();
+    _saveSWConfigToFile();
     settings.endGroup();
 }
 
@@ -348,6 +359,31 @@ void KeyConfiguration::_saveKeyConfiguration(int keyIndex)
     settings.setValue("defaultValue", _keySettingCache[keyIndex].defaultValue);
     settings.endGroup();
     settings.endGroup();
+
+    _saveKeyConfigToFile(keyIndex);
+}
+
+void KeyConfiguration::_saveKeyConfigToFile(int keyIndex)
+{
+    _configSaver->beginGroup(QString(_keyStringList[keyIndex]).replace(" ", "_"));
+    _configSaver->setValue("sbus", _keySettingCache[keyIndex].sbus);
+    _configSaver->setValue("channel", _keySettingCache[keyIndex].channel);
+    _configSaver->setValue("value", _keySettingCache[keyIndex].value);
+    _configSaver->setValue("switchType", _keySettingCache[keyIndex].switchType);
+    _configSaver->setValue("defaultValue", _keySettingCache[keyIndex].defaultValue);
+    _configSaver->endGroup();
+    _configSaver->sync();
+
+    std::ifstream infile(KEY_CONFIG_FILENAME);
+    std::ofstream outfile(RC_KEY_CONFIG_FILENAME);
+    char buf[2048];
+    while(infile) {
+        infile.read(buf, 2048);
+        outfile.write(buf, infile.gcount());
+    }
+
+    infile.close();
+    outfile.close();
 }
 
 void KeyConfiguration::_saveScrollWheelConfiguration()
@@ -360,6 +396,28 @@ void KeyConfiguration::_saveScrollWheelConfiguration()
     settings.setValue("channel", _scrollWheelSetting.channel);
     settings.endGroup();
     settings.endGroup();
+
+    _saveSWConfigToFile();
+}
+
+void KeyConfiguration::_saveSWConfigToFile()
+{
+    _configSaver->beginGroup("scrollwheel");
+    _configSaver->setValue("sbus", _scrollWheelSetting.sbus);
+    _configSaver->setValue("channel", _scrollWheelSetting.channel);
+    _configSaver->endGroup();
+    _configSaver->sync();
+
+    std::ifstream infile(KEY_CONFIG_FILENAME);
+    std::ofstream outfile(RC_KEY_CONFIG_FILENAME);
+    char buf[2048];
+    while(infile) {
+        infile.read(buf, 2048);
+        outfile.write(buf, infile.gcount());
+    }
+
+    infile.close();
+    outfile.close();
 }
 
 int KeyConfiguration::ppmToSbus(int ppm) {

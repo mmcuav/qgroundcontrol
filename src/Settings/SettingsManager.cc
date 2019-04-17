@@ -22,6 +22,7 @@ SettingsManager::SettingsManager(QGCApplication* app, QGCToolbox* toolbox)
     , _rtkSettings          (NULL)
     , _guidedSettings       (NULL)
     , _brandImageSettings   (NULL)
+    , _rfSettings           (NULL)
 {
 
 }
@@ -40,4 +41,5 @@ void SettingsManager::setToolbox(QGCToolbox *toolbox)
     _rtkSettings =          new RTKSettings(this);
     _guidedSettings =       new GuidedSettings(this);
     _brandImageSettings =   new BrandImageSettings(this);
+    _rfSettings =           new RfSettings(this);
 }

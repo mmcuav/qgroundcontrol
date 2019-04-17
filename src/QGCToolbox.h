@@ -20,6 +20,7 @@ class GPSManager;
 class JoystickManager;
 class FollowMe;
 class LinkManager;
+class SysStatusManager;
 class MAVLinkProtocol;
 class MissionCommandTree;
 class MultiVehicleManager;
@@ -44,6 +45,7 @@ public:
     AudioOutput*                audioOutput(void)               { return _audioOutput; }
     JoystickManager*            joystickManager(void)           { return _joystickManager; }
     LinkManager*                linkManager(void)               { return _linkManager; }
+    SysStatusManager*           sysStatusManager(void)          { return _sysStatusManager; }
     MAVLinkProtocol*            mavlinkProtocol(void)           { return _mavlinkProtocol; }
     MissionCommandTree*         missionCommandTree(void)        { return _missionCommandTree; }
     MultiVehicleManager*        multiVehicleManager(void)       { return _multiVehicleManager; }
@@ -75,6 +77,7 @@ private:
     QGCImageProvider*           _imageProvider;
     JoystickManager*            _joystickManager;
     LinkManager*                _linkManager;
+    SysStatusManager*           _sysStatusManager;
     MAVLinkProtocol*            _mavlinkProtocol;
     MissionCommandTree*         _missionCommandTree;
     MultiVehicleManager*        _multiVehicleManager;

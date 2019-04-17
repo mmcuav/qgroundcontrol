@@ -581,12 +581,15 @@ HEADERS += \
     src/Settings/SettingsManager.h \
     src/Settings/UnitsSettings.h \
     src/Settings/VideoSettings.h \
+    src/Settings/WifiSettings.h \
+    src/Settings/RfSettings.h \
     src/Terrain.h \
     src/Vehicle/MAVLinkLogManager.h \
     src/VehicleSetup/JoystickConfigController.h \
     src/comm/LinkConfiguration.h \
     src/comm/LinkInterface.h \
     src/comm/LinkManager.h \
+    src/comm/SysStatusManager.h \
     src/comm/MAVLinkProtocol.h \
     src/comm/ProtocolInterface.h \
     src/comm/QGCMAVLink.h \
@@ -601,6 +604,7 @@ HEADERS += \
 AndroidBuild {
 HEADERS += \
     src/Joystick/JoystickAndroid.h \
+    src/Joystick/InputEventReader.h \
     src/AndroidInterface.h \
     src/AndroidController.h \
 }
@@ -687,6 +691,7 @@ iOSBuild {
 AndroidBuild {
     SOURCES += src/MobileScreenMgr.cc \
     src/Joystick/JoystickAndroid.cc \
+    src/Joystick/InputEventReader.cc \
     src/AndroidInterface.cc \
     src/AndroidController.cc \
 }
@@ -777,12 +782,15 @@ SOURCES += \
     src/Settings/SettingsManager.cc \
     src/Settings/UnitsSettings.cc \
     src/Settings/VideoSettings.cc \
+    src/Settings/WifiSettings.cc \
+    src/Settings/RfSettings.cc \
     src/Terrain.cc \
     src/Vehicle/MAVLinkLogManager.cc \
     src/VehicleSetup/JoystickConfigController.cc \
     src/comm/LinkConfiguration.cc \
     src/comm/LinkInterface.cc \
     src/comm/LinkManager.cc \
+    src/comm/SysStatusManager.cc \
     src/comm/MAVLinkProtocol.cc \
     src/comm/QGCMAVLink.cc \
     src/comm/TCPLink.cc \

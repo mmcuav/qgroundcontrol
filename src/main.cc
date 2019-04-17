@@ -77,6 +77,7 @@ int WindowsCrtReportHook(int reportType, char* message, int* returnValue)
 #if defined(__android__) && !defined(NO_SERIAL_LINK)
 #include <jni.h>
 #include "qserialport.h"
+#include "Settings/WifiSettings.h"
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
@@ -89,6 +90,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
     }
 
     QSerialPort::setNativeMethods();
+    WifiSettings::setNativeMethods();
 
     /* Tell the androidmedia plugin about the Java VM if we can */
     module = g_module_open (NULL, G_MODULE_BIND_LOCAL);
